@@ -1,7 +1,10 @@
 [project]
-name = "logseq-to-obsidian"
+name = "logseq-converter"
 version = "0.1.0"
-description = "Add your description here"
+description = "Convert LogSeq graph to Obsidian vault"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []
+
+[dependency-groups]
+dev = ["ruff", "pytest"]
