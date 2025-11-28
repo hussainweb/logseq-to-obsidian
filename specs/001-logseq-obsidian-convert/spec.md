@@ -3,21 +3,21 @@
 **Feature Branch**: `001-logseq-obsidian-convert`
 **Created**: 2025-11-27
 **Status**: Draft
-**Input**: User description: "CLI application to convert a LogSeq vault to Obsidian vault..."
+**Input**: User description: "CLI application to convert a LogSeq graph to Obsidian vault..."
 
 ## User Scenarios & Testing
 
-### User Story 1 - Full Vault Conversion (Priority: P1)
+### User Story 1 - Full Graph Conversion (Priority: P1)
 
-As a user, I want to convert my entire LogSeq vault to an Obsidian vault so that I can migrate my notes with minimal manual effort.
+As a user, I want to convert my entire LogSeq graph to an Obsidian vault so that I can migrate my notes with minimal manual effort.
 
 **Why this priority**: This is the core functionality of the tool. Without this, the tool provides no value.
 
-**Independent Test**: Can be fully tested by running the tool on a sample LogSeq vault and verifying the output directory structure and file contents in Obsidian.
+**Independent Test**: Can be fully tested by running the tool on a sample LogSeq graph and verifying the output directory structure and file contents in Obsidian.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid LogSeq vault path and an empty destination path, **When** I run the conversion command, **Then** the destination directory is populated with the converted vault, including `assets`, `Daily` journals, and `pages` folders.
+1. **Given** a valid LogSeq graph path and an empty destination path, **When** I run the conversion command, **Then** the destination directory is populated with the converted vault, including `assets`, `Daily` journals, and `pages` folders.
 2. **Given** a non-empty destination path, **When** I run the conversion command, **Then** the tool exits with an error message to prevent data loss.
 3. **Given** a LogSeq page with `___` in the filename (e.g., `Category___Topic`), **When** converted, **Then** the file is placed in a nested directory structure (e.g., `Category/Topic.md`).
 
@@ -109,7 +109,7 @@ As a user, I want specific journal sections (Achievements, Highlights, Learnings
 
 These entities define the core intermediate representation (IR) of the Logseq data, which will be passed from the parser to a writer.
 
-- **Vault**: The collection of markdown files and assets.
+- **Graph**: The collection of markdown files and assets.
 - **Journal**: A daily note file.
 - **Page**: A standard note file.
 - **Block**: A single paragraph or bullet point in LogSeq, identified by a UUID.
@@ -119,7 +119,7 @@ These entities define the core intermediate representation (IR) of the Logseq da
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of non-ignored files from the source vault are present in the destination vault (either as-is or transformed).
+- **SC-001**: 100% of non-ignored files from the source graph are present in the destination vault (either as-is or transformed).
 - **SC-002**: 0% of block references result in broken links in Obsidian (assuming valid refs in source).
 - **SC-003**: All "Achievements", "Highlights", "Learnings", and "Links" items are correctly extracted to their respective folders.
 - **SC-004**: The conversion process completes for a medium-sized vault (e.g., 1000 files) in under 1 minute.
