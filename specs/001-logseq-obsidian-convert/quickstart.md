@@ -34,7 +34,7 @@ The primary command for running the conversion is `logseq-to-obsidian`.
 logseq-to-obsidian <source_directory> <destination_directory> [options]
 ```
 
--   `<source_directory>`: The path to your source LogSeq vault.
+-   `<source_directory>`: The path to your source LogSeq graph.
 -   `<destination_directory>`: The path to the directory where the Obsidian vault will be created. **This directory MUST be empty.**
 
 ### Options
@@ -43,7 +43,7 @@ logseq-to-obsidian <source_directory> <destination_directory> [options]
 
 ### Example
 
-To convert a LogSeq vault located at `~/notes/logseq` to a new Obsidian vault at `~/notes/obsidian`:
+To convert a LogSeq graph located at `~/notes/logseq` to a new Obsidian vault at `~/notes/obsidian`:
 
 ```bash
 logseq-to-obsidian ~/notes/logseq ~/notes/obsidian
@@ -60,5 +60,5 @@ Upon completion, the `~/notes/obsidian` directory will be a fully converted Obsi
 ### Error Handling
 
 -   If the destination directory is not empty, the tool will exit with an error to prevent accidental data loss.
--   If the source directory does not exist, the tool will exit with an error.
+-   If the source directory does not not exist, the tool will exit with an error.
 -   Warnings for broken links or un-parsable files will be printed to the console (`stderr`).

@@ -1,11 +1,11 @@
 # Implementation Plan: LogSeq to Obsidian Converter
 
-**Branch**: `001-logseq-obsidian-convert` | **Date**: 2025-11-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `001-logseq-obsidian-convert` | **Date**: 2025-11-28 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/Users/hw/work/personal/logseq-to-obsidian/specs/001-logseq-obsidian-convert/spec.md`
 
 ## Summary
 
-This plan outlines the technical approach for building a CLI application that converts a LogSeq vault into an Obsidian vault. The tool will parse Markdown files, transform LogSeq-specific syntax (block references, properties, date links), and restructure the directory layout to be compatible with Obsidian. The core of the conversion will be handled by a robust Markdown parsing library capable of AST manipulation.
+This plan outlines the technical approach for building a CLI application that converts a LogSeq graph into an Obsidian vault. The tool will parse Markdown files, transform LogSeq-specific syntax (block references, properties, date links), and restructure the directory layout to be compatible with Obsidian. The core of the conversion will be handled by a robust Markdown parsing library capable of AST manipulation.
 
 ## Technical Context
 

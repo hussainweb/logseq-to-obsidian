@@ -9,9 +9,9 @@ This document outlines the key data entities involved in the conversion process,
 
 ```mermaid
 erDiagram
-    VAULT ||--|{ PAGE : "contains"
-    VAULT ||--|{ JOURNAL : "contains"
-    VAULT ||--|{ ASSET : "contains"
+    GRAPH ||--|{ PAGE : "contains"
+    GRAPH ||--|{ JOURNAL : "contains"
+    GRAPH ||--|{ ASSET : "contains"
     PAGE ||--|{ BLOCK : "contains"
     JOURNAL ||--|{ BLOCK : "contains"
     BLOCK ||--|{ PROPERTY : "has"
@@ -20,11 +20,11 @@ erDiagram
 
 ## Entity Definitions
 
-### Vault
+### Graph
 The top-level container for all notes and assets.
 
 - **Attributes**:
-    - `source_path` (string): The absolute path to the source LogSeq vault directory.
+    - `source_path` (string): The absolute path to the source LogSeq graph directory.
     - `destination_path` (string): The absolute path to the destination Obsidian vault directory.
     - `pages` (list of Page): Collection of standard note files.
     - `journals` (list of Journal): Collection of daily note files.
