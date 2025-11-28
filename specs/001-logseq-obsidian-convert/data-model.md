@@ -1,54 +1,89 @@
-# Data Model
+# Data Model: LogSeq to Obsidian Converter
 
-## Entities
+**Date**: 2025-11-27
+**Status**: Done
 
-### Graph
-Represents the entire LogSeq knowledge base.
-- **Path**: `pathlib.Path` (Source directory)
-- **Pages**: List[`Page`]
-- **Journals**: List[`Journal`]
-- **Assets**: List[`pathlib.Path`]
+This document outlines the key data entities involved in the conversion process, as derived from the feature specification.
+
+## Entity-Relationship Diagram (Conceptual)
+
+```mermaid
+erDiagram
+    VAULT ||--|{ PAGE : "contains"
+    VAULT ||--|{ JOURNAL : "contains"
+    VAULT ||--|{ ASSET : "contains"
+    PAGE ||--|{ BLOCK : "contains"
+    JOURNAL ||--|{ BLOCK : "contains"
+    BLOCK ||--|{ PROPERTY : "has"
+    BLOCK ||--o{ BLOCK : "references"
+```
+
+## Entity Definitions
+
+### Vault
+The top-level container for all notes and assets.
+
+- **Attributes**:
+    - `source_path` (string): The absolute path to the source LogSeq vault directory.
+    - `destination_path` (string): The absolute path to the destination Obsidian vault directory.
+    - `pages` (list of Page): Collection of standard note files.
+    - `journals` (list of Journal): Collection of daily note files.
+    - `assets` (list of Asset): Collection of asset files (images, PDFs, etc.).
 
 ### Page
-Represents a single Markdown file (Note).
-- **Path**: `pathlib.Path` (Relative to vault root)
-- **Parent**: `Page` (Parent folder)
-- **Title**: `str` (Derived from filename)
-- **Blocks**: List[`Block`]
-- **Frontmatter**: `dict` (Extracted properties)
-- **Type**: Enum(`Standard`, `Journal`)
+A standard Markdown note.
 
-### Journal (inherits Page)
-Represents a daily note.
-- **Date**: `datetime.date` (Derived from filename YYYY_MM_DD)
+- **Attributes**:
+    - `filename` (string): The original filename (e.g., `Category___Topic.md`).
+    - `content` (string): The raw Markdown content of the file.
+    - `blocks` (list of Block): A list of the blocks that make up the page.
+    - `properties` (dict): Key-value pairs that will be converted to YAML frontmatter.
+
+- **State Transitions**:
+    - `A___B.md` is transformed into `A/B.md` in the destination vault.
+
+### Journal
+A daily note.
+
+- **Attributes**:
+    - `filename` (string): The original filename (e.g., `2025_11_27.md`).
+    - `date` (datetime): The date of the journal entry.
+    - `content` (string): The raw Markdown content of the file.
+    - `blocks` (list of Block): A list of the blocks that make up the journal.
+
+- **State Transitions**:
+    - `YYYY_MM_DD.md` is transformed into `Daily/YYYY-MM-DD.md` in the destination vault.
 
 ### Block
-Represents a single unit of content (paragraph, bullet).
-- **ID**: `str` (Optional UUID)
-- **Content**: `str` (Markdown text)
-- **Properties**: `dict` (Key-value pairs)
-- **Children**: List[`Block`] (Nested blocks)
-- **IndentLevel**: `int` (0-based)
+A single unit of content within a Page or Journal, typically a paragraph or a bullet point.
 
-## Transformations
+- **Attributes**:
+    - `id` (string): The unique UUID assigned by LogSeq (e.g., `6383a3e6-b99a-41d9-9635-a1c6a3b9d3d3`).
+    - `content` (string): The textual content of the block.
+    - `properties` (dict): Key-value pairs defined within the block (e.g., `key:: value`).
+    - `children` (list of Block): A list of nested child blocks (sub-bullets).
 
-### Path Transformation Rules
-- **Journals**: `journals/YYYY_MM_DD.md` -> `Daily/YYYY-MM-DD.md`
-- **Pages (Root)**: `pages/PageName.md` -> `PageName.md`
-- **Pages (Namespaced)**: `pages/Category___Topic.md` -> `Category/Topic.md`
-- **Assets**: `assets/*` -> `assets/*` (Copied as-is)
+- **State Transitions**:
+    - The LogSeq `id` is used to generate an Obsidian block anchor (`^blockid`).
+    - `((uuid))` references are converted to `[[filename#^blockid]]` links.
+    - `properties` are moved to the file's YAML frontmatter.
 
-### Link Rewriting
-- **Internal Link**: `[[Page Name]]` -> `[[Page Name]]` (Obsidian handles unique filenames at root) or `[[Category/Topic]]` if nested.
-- **Journal Link**: `[[15 Nov 2025]]` -> `[[Daily/2025-11-15]]`
-- **Block Ref**: `((uuid))` -> `[[Page#^blockid]]`
+### Asset
+A non-Markdown file, like an image or a PDF.
 
-### Property Extraction
-- **Block Properties**: `key:: value` -> Moved to Page Frontmatter if at top level, or kept as text if needed (Spec says "System MUST convert LogSeq properties ... to YAML frontmatter at the top of the file").
-    - *Clarification*: LogSeq allows properties on *any* block. Obsidian properties (YAML) are file-level.
-    - *Decision*: Only top-level page properties (first block) are moved to Frontmatter. Block-level properties on child blocks might need to be kept as text or converted to Obsidian inline fields (`[key:: value]`). The spec FR-011 says "System MUST convert LogSeq properties ... to YAML frontmatter". It implies page properties. I will assume page properties for now.
+- **Attributes**:
+    - `filename` (string): The name of the asset file.
+    - `path` (string): The path to the asset file within the `assets` directory.
 
-## Validation Rules
+- **State Transitions**:
+    - Copied as-is from the source `assets` directory to the destination `assets` directory.
 
-- **Destination Empty**: Destination directory must not contain files (except `.git` maybe? Spec says "empty").
-- **Unique Filenames**: Extracted sections must handle collisions.
+### Property
+A key-value pair associated with a Block.
+
+- **Attributes**:
+    - `key` (string): The property key.
+    - `value` (string): The property value.
+
+- **State Transitions**:
+    - Moved from the block to the YAML frontmatter of the containing file. If a key already exists in the frontmatter, values may be appended or handled according to a defined rule (TBD in implementation).

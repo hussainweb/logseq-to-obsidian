@@ -1,36 +1,34 @@
-# Research: LogSeq to Obsidian Conversion Strategy
+# Research: LogSeq to Obsidian Converter
 
-## Parsing Strategy for LogSeq Markdown
+**Date**: 2025-11-27
+**Status**: Done
 
-**Problem**: LogSeq uses an outline-based Markdown flavor where indentation is structural (parent-child relationships). We need to:
-1. Extract specific sub-trees (e.g., "Achievements").
-2. Transform specific tokens (links, block refs) within lines.
-3. Handle block properties (key:: value).
+## 1. Markdown Parsing Library
 
-**Options Considered**:
+### Decision
+The project will use the `mistletoe` library for parsing Markdown files.
 
-1.  **Standard Markdown Parser (e.g., `markdown-it-py`)**:
-    *   *Pros*: Robust standard Markdown support.
-    *   *Cons*: LogSeq isn't strictly CommonMark. It treats indentation as block nesting in a way that standard parsers might interpret as code blocks or lists differently. Overkill for simple line transformations.
+### Rationale
+The conversion process requires transforming LogSeq-specific syntax (like block properties `key:: value` and block references `((uuid))`) into Obsidian-compliant Markdown. This requires a parser that can produce an Abstract Syntax Tree (AST) which can be traversed and modified before rendering.
 
-2.  **Regex-only**:
-    *   *Pros*: Fast, easy for simple substitutions (`[[link]]` -> `[[new]]`).
-    *   *Cons*: Fragile for structural operations (extracting a tree of bullets). Hard to maintain state (e.g., "am I inside an 'Achievements' block?").
+`mistletoe` was chosen because:
+- It is a pure-Python, spec-compliant CommonMark parser.
+- It builds an AST that is easy to traverse and manipulate.
+- It is highly extensible, allowing for the creation of custom tokens and renderers to handle LogSeq's non-standard syntax. This is critical for accurately parsing and converting the source files.
 
-3.  **Custom Indentation-Aware Line Processor (State Machine)**:
-    *   *Pros*: Directly models LogSeq's outline structure. Easy to track "current parent" and "indentation level". Efficient for stream processing.
-    *   *Cons*: Requires writing custom logic.
+### Alternatives Considered
+- **Python-Markdown**: While popular, its primary focus is on HTML conversion and its extension API is less straightforward for AST manipulation compared to `mistletoe`.
+- **Mistune**: Known for speed, but its extensibility for complex syntax transformation is not as well-documented as `mistletoe`'s.
 
-**Decision**: **Custom Indentation-Aware Line Processor**.
-*   **Rationale**: LogSeq files are fundamentally outlines. We need to preserve this structure or transform it based on hierarchy. A simple reader that tracks indentation level and current context (e.g., "inside Achievements section") is the most robust way to handle the extraction requirements (FR-012, FR-013) and property extraction (FR-011).
+## 2. CLI Application Best Practices
 
-## Libraries
+### Decision
+The CLI will be built using Python's standard `argparse` module for simplicity and to avoid external dependencies for argument parsing. It will follow standard conventions for exit codes and output streams as defined in the constitution.
 
-*   **Path Handling**: `pathlib` (Standard Lib) - Robust path manipulation.
-*   **Frontmatter**: `python-frontmatter` or manual YAML handling. Since we are *creating* frontmatter from properties, manual generation is simple and avoids dependencies.
-*   **Testing**: `pytest` (as per Constitution).
+### Rationale
+- **`argparse`**: It is part of the standard library, well-documented, and sufficient for the specified requirements (source and destination paths, verbosity flag). It avoids adding another dependency to the project.
+- **Exit Codes**: Adhering to standard exit codes (0 for success, non-zero for failure) ensures predictability and allows the tool to be used in scripts.
+- **Streams**: Using `stdout` for results and `stderr` for logs/errors is a fundamental principle of CLI design that ensures composability. The progress indicator will write to `stderr` to avoid polluting `stdout`.
 
-## Unknowns Resolved
-
-*   **Parsing**: Custom state machine.
-*   **File System**: `pathlib`.
+### Alternatives Considered
+- **`click` / `typer`**: These are excellent third-party libraries for building complex CLIs. However, for the simple needs of this project (two arguments and a flag), they would be an unnecessary dependency. If the tool's complexity grows, this decision could be revisited.

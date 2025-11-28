@@ -1,45 +1,64 @@
-# Quickstart Guide
+# Quickstart: LogSeq to Obsidian Converter
+
+**Date**: 2025-11-27
+**Status**: Done
+
+This guide provides a brief overview of how to install and run the LogSeq to Obsidian Converter CLI tool.
+
+## Prerequisites
+
+- Python 3.14+
+- `uv` installed (`pip install uv`)
 
 ## Installation
 
-```bash
-# Clone the repository
-git clone <repo-url>
-cd logseq-to-obsidian
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd logseq-to-obsidian
+    ```
 
-# Install dependencies
-uv sync
-```
+2.  **Create a virtual environment and install dependencies**:
+    ```bash
+    uv venv
+    uv sync
+    ```
 
 ## Usage
 
-The tool is a CLI application.
+The primary command for running the conversion is `logseq-to-obsidian`.
+
+### Command Syntax
 
 ```bash
-# Basic conversion
-uv run logseq-to-obsidian convert /path/to/logseq-vault /path/to/obsidian-vault
-
-# Get help
-uv run logseq-to-obsidian --help
+logseq-to-obsidian <source_directory> <destination_directory> [options]
 ```
 
-### Arguments
-
-- `SOURCE`: Path to the existing LogSeq vault directory.
-- `DESTINATION`: Path to the *empty* directory where the Obsidian vault will be created.
+-   `<source_directory>`: The path to your source LogSeq vault.
+-   `<destination_directory>`: The path to the directory where the Obsidian vault will be created. **This directory MUST be empty.**
 
 ### Options
 
-- `--verbose`, `-v`: Enable debug logging.
-- `--version`: Show version information.
+-   `-v`, `--verbose`: Enable verbose logging to see detailed information about the conversion process.
 
-## Example
+### Example
+
+To convert a LogSeq vault located at `~/notes/logseq` to a new Obsidian vault at `~/notes/obsidian`:
 
 ```bash
-uv run logseq-to-obsidian convert ~/Documents/LogSeq/MyGraph ~/Documents/Obsidian/MyGraph
+logseq-to-obsidian ~/notes/logseq ~/notes/obsidian
 ```
 
-## Troubleshooting
+The tool will then perform the conversion, showing a progress indicator:
 
-- **"Destination is not empty"**: Ensure the target folder is empty.
-- **"Source not found"**: Check if the source path exists.
+```
+Processing files... [ spinning wheel ] processing journal/2025_11_27.md
+```
+
+Upon completion, the `~/notes/obsidian` directory will be a fully converted Obsidian vault.
+
+### Error Handling
+
+-   If the destination directory is not empty, the tool will exit with an error to prevent accidental data loss.
+-   If the source directory does not exist, the tool will exit with an error.
+-   Warnings for broken links or un-parsable files will be printed to the console (`stderr`).

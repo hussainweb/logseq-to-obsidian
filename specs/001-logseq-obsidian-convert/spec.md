@@ -56,16 +56,17 @@ As a user, I want specific journal sections (Achievements, Highlights, Learnings
 ### Edge Cases
 
 - **Destination Not Empty**: If the destination directory is not empty, the system MUST abort to prevent data loss.
-- **Duplicate Filenames**: If extracting a journal section results in a filename that already exists (e.g. two "Reading" bullets), the system MUST append a unique suffix (e.g. "Reading 1").
+- **Filename Collisions**: If any file conversion or extraction results in a filename that already exists, the system MUST append a unique suffix (e.g., `filename-1.md`). This applies to case-insensitive collisions (e.g., `Note.md` and `note.md`), which MUST be renamed to avoid data loss (e.g., `note-case-conflict.md`).
 - **Missing Source**: If the source path does not exist, the system MUST report an error.
 - **Invalid Markdown**: The system should attempt to process files as best as possible, logging warnings and informational messages to the console by default, with an option for increased verbosity, for any files that cannot be parsed.
+- **Unsupported Features**: For Logseq features not explicitly supported by the converter (e.g., queries, macros), the system MUST leave the original syntax untouched in the output, log a warning for each instance, and continue processing.
 
 ## Requirements
 
 ### Functional Requirements
 
-- **FR-001**: System MUST accept source and destination directory paths as CLI arguments.
-- **FR-002**: System MUST validate that the destination directory is empty before proceeding.
+- **FR-001**: System MUST accept a source directory path, a target format, and an output directory path as CLI arguments (e.g., `convert <source> --to <format> --out <dir>`).
+- **FR-002**: System MUST validate that the output directory is empty before proceeding.
 - **FR-003**: System MUST copy the `assets` directory from source to destination without modification.
 - **FR-004**: System MUST NOT copy the `logseq` configuration directory.
 - **FR-005**: System MUST transform journal files (YYYY_MM_DD.md or similar) to `Daily/YYYY-MM-DD.md`.
@@ -85,7 +86,28 @@ As a user, I want specific journal sections (Achievements, Highlights, Learnings
 
 - **NFR-001**: System MUST process files in a streaming or chunk-based manner to handle large files efficiently and avoid excessive memory consumption.
 
+## Architectural Constraints
+
+- **AC-001**: The system MUST be designed with a modular architecture that separates the core Logseq parsing logic and data model from the output-specific "writer" logic. This is to support future conversion to other platforms (e.g., Tana, Capacities) with minimal changes to the core.
+- **AC-002**: The project structure will reflect this separation, with a general `logseq` library and distinct `writers` for each target format (e.g., a `writers/obsidian` module).
+
+## Architectural Tradeoffs
+
+- **AT-001**: While the architecture mandates separation between parser/model and writers, a formal "Writer" interface (e.g., abstract base class or protocol) will not be defined initially. The implementation will rely on convention. A refactor to introduce a formal interface will occur if additional writers beyond Obsidian are added in the future.
+
+## Compatibility
+
+- **COM-001**: The converter will aim for best-effort compatibility with recent versions of Logseq. It does not guarantee support for specific Logseq versions or future breaking changes to the format.
+
+## Terminology
+
+- **Parse**: The process of reading and interpreting the source Logseq markdown files and converting them into the intermediate data model (Model).
+- **Model**: The in-memory, language-agnostic intermediate representation (IR) of the Logseq data structure. This is the output of the Parse step.
+- **Write**: The process of taking the intermediate data model (Model) and generating the output files in the specified target format (e.g., Obsidian markdown).
+
 ### Key Entities
+
+These entities define the core intermediate representation (IR) of the Logseq data, which will be passed from the parser to a writer.
 
 - **Vault**: The collection of markdown files and assets.
 - **Journal**: A daily note file.
@@ -103,6 +125,16 @@ As a user, I want specific journal sections (Achievements, Highlights, Learnings
 - **SC-004**: The conversion process completes for a medium-sized vault (e.g., 1000 files) in under 1 minute.
 
 ## Clarifications
+
+### Session 2025-11-28
+- Q: How should the project be structured to support the global parser/model and future writers? → A: A core `logseq` library for parsing and data models, with separate `writers` for each target (e.g., `writers/obsidian`).
+- Q: How should the CLI command be designed to accommodate future output formats beyond Obsidian? → A: `convert <source> --to <format> --out <dir>`
+- Q: Should we define a formal "Writer" interface that takes the intermediate data model as input, ensuring a clean separation between parsing and writing? → A: No, rely on convention for now and refactor if more writers are added.
+- Q: To align with the modular architecture, should we standardize on precise terms for the conversion pipeline, such as `Parse` (Logseq text -> model), `Model` (the intermediate representation), and `Write` (model -> target format)? → A: Yes, standardize on these terms.
+- Q: How should the converter handle advanced or esoteric Logseq features like block queries ({{query ...}}), macros, or whiteboard files (.excalidraw)? → A: Warn and Bypass: The converter should log a prominent warning, leave the unsupported syntax untouched in the output file, and continue the conversion.
+- Q: How should the system handle potential filename collisions, especially on case-insensitive filesystems (e.g., `Note.md` vs `note.md`)? → A: Append Suffix: On collision, append a unique, descriptive suffix to the conflicting filename (e.g., `note-case-conflict-1.md`).
+- Q: What level of compatibility should the converter promise regarding Logseq versions? → A: Best-effort compatibility.
+- Q: How should duplicate property keys from different blocks in the same file be handled in the YAML frontmatter? → A: Create a YAML list: Aggregate all values for the duplicate key into a list (array) in the frontmatter.
 
 ### Session 2025-11-27
 - Q: When extracting a journal item, the bullet text is used for the new filename. This text can contain characters that are illegal in filenames (e.g., ?, /, :). How should the system handle illegal characters in generated filenames? → A: The system should sanitize the filename by removing or replacing any illegal characters with a safe substitute (like a hyphen).
