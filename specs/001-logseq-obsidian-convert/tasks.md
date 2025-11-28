@@ -22,18 +22,18 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project root directory `src/logseq_converter`
-- [ ] T002 Create subdirectories `src/logseq_converter/logseq`, `src/logseq_converter/obsidian`
-- [ ] T003 Create `__init__.py` files in `src/logseq_converter`, `src/logseq_converter/logseq`, `src/logseq_converter/obsidian`
-- [ ] T004 Create `src/logseq_converter/cli.py` for CLI entry point
-- [ ] T005 Create `src/logseq_converter/utils.py` for common utilities
-- [ ] T006 Create `src/logseq_converter/logseq/models.py` for LogSeq data models
-- [ ] T007 Create `src/logseq_converter/logseq/parser.py` for LogSeq parsing logic
-- [ ] T008 Create `src/logseq_converter/obsidian/converter.py` for Obsidian-specific conversion logic
-- [ ] T009 Create `tests/integration` and `tests/unit` directories
-- [ ] T010 Initialize Python project with `uv init` in `pyproject.toml`
-- [ ] T011 [P] Add dev dependencies: `uv add --dev ruff pytest` to `pyproject.toml`
-- [ ] T012 [P] Configure `pyproject.toml` for `ruff` and `pytest`
+- [X] T001 Create project root directory `src/logseq_converter`
+- [X] T002 Create subdirectories `src/logseq_converter/logseq`, `src/logseq_converter/obsidian`
+- [X] T003 Create `__init__.py` files in `src/logseq_converter`, `src/logseq_converter/logseq`, `src/logseq_converter/obsidian`
+- [X] T004 Create `src/logseq_converter/cli.py` for CLI entry point
+- [X] T005 Create `src/logseq_converter/utils.py` for common utilities
+- [X] T006 Create `src/logseq_converter/logseq/models.py` for LogSeq data models
+- [X] T007 Create `src/logseq_converter/logseq/parser.py` for LogSeq parsing logic
+- [X] T008 Create `src/logseq_converter/obsidian/converter.py` for Obsidian-specific conversion logic
+- [X] T009 Create `tests/integration` and `tests/unit` directories
+- [X] T010 Initialize Python project with `uv init` in `pyproject.toml`
+- [X] T011 [P] Add dev dependencies: `uv add --dev ruff pytest` to `pyproject.toml`
+- [X] T012 [P] Configure `pyproject.toml` for `ruff` and `pytest`
 
 ---
 
@@ -43,13 +43,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T013 Implement CLI argument parsing in `src/logseq_converter/cli.py` (FR-001)
-- [ ] T014 Implement output directory validation (empty check) in `src/logseq_converter/utils.py` (FR-002)
-- [ ] T015 Implement assets copying logic in `src/logseq_converter/utils.py` (FR-003, FR-004)
-- [ ] T016 Implement a progress indicator in `src/logseq_converter/utils.py` (FR-015)
-- [ ] T017 Implement a generic logging and warning mechanism in `src/logseq_converter/utils.py` (Edge Cases)
-- [ ] T018 Define base `Block`, `Page`, `Journal`, `Graph` models in `src/logseq_converter/logseq/models.py` (data-model.md)
-- [ ] T019 Implement the initial Markdown parsing setup using `mistletoe` in `src/logseq_converter/logseq/parser.py` (Research)
+- [X] T013 Implement CLI argument parsing in `src/logseq_converter/cli.py` (FR-001)
+- [X] T014 Implement output directory validation (empty check) in `src/logseq_converter/utils.py` (FR-002)
+- [X] T015 Implement assets copying logic in `src/logseq_converter/utils.py` (FR-003, FR-004)
+- [X] T016 Implement a progress indicator in `src/logseq_converter/utils.py` (FR-015)
+- [X] T017 Implement a generic logging and warning mechanism in `src/logseq_converter/utils.py` (Edge Cases)
+- [X] T018 Define base `Block`, `Page`, `Journal`, `Graph` models in `src/logseq_converter/logseq/models.py` (data-model.md)
+- [X] T019 Implement the initial Markdown parsing setup using `mistletoe` in `src/logseq_converter/logseq/parser.py` (Research)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -63,10 +63,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Implement journal file transformation (YYYY_MM_DD.md to Daily/YYYY-MM-DD.md) in `src/logseq_converter/obsidian/converter.py` (FR-005)
-- [ ] T021 [US1] Implement page file transformation (A___B.md to A/B.md) in `src/logseq_converter/obsidian/converter.py` (FR-006)
-- [ ] T022 [US1] Implement the main conversion orchestration in `src/logseq_converter/cli.py` to process all files in a vault.
-- [ ] T023 [US1] Add integration tests for full vault conversion in `tests/integration/test_full_vault_conversion.py`
+- [X] T020 [US1] Implement journal file transformation (YYYY_MM_DD.md to Daily/YYYY-MM-DD.md) in `src/logseq_converter/obsidian/converter.py` (FR-005)
+- [X] T021 [US1] Implement page file transformation (A___B.md to A/B.md) in `src/logseq_converter/obsidian/converter.py` (FR-006)
+- [X] T022 [US1] Implement the main conversion orchestration in `src/logseq_converter/cli.py` to process all files in a vault.
+- [X] T023 [US1] Add integration tests for full vault conversion in `tests/integration/test_full_vault_conversion.py`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -80,14 +80,14 @@
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Implement a two-pass approach for block references in `src/logseq_converter/logseq/parser.py` (Research)
-- [ ] T025 [US2] Implement LogSeq block ID (`id:: uuid`) to Obsidian block anchor (`^blockid`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-010)
-- [ ] T026 [US2] Implement LogSeq block reference (`((uuid))`) to Obsidian internal link (`[[file#^blockid]]`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-009)
-- [ ] T027 [US2] Implement LogSeq date link (`[[15 Nov 2025]]`) to Obsidian format (`[[Daily/2025-11-15]]`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-008)
-- [ ] T028 [US2] Implement internal link rewriting to match new file paths and folder structures in `src/logseq_converter/obsidian/converter.py` (FR-007)
-- [ ] T029 [US2] Implement LogSeq properties (`key:: value`) to YAML frontmatter conversion in `src/logseq_converter/obsidian/converter.py` (FR-011)
-- [ ] T030 [US2] Handle broken block references/date links (retain original text, log warning) in `src/logseq_converter/obsidian/converter.py` (FR-016)
-- [ ] T031 [US2] Add unit tests for link and property transformations in `tests/unit/test_link_property_transformation.py`
+- [X] T024 [US2] Implement a two-pass approach for block references in `src/logseq_converter/logseq/parser.py` (Research)
+- [X] T025 [US2] Implement LogSeq block ID (`id:: uuid`) to Obsidian block anchor (`^blockid`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-010)
+- [X] T026 [US2] Implement LogSeq block reference (`((uuid))`) to Obsidian internal link (`[[file#^blockid]]`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-009)
+- [X] T027 [US2] Implement LogSeq date link (`[[15 Nov 2025]]`) to Obsidian format (`[[Daily/2025-11-15]]`) conversion in `src/logseq_converter/obsidian/converter.py` (FR-008)
+- [X] T028 [US2] Implement internal link rewriting to match new file paths and folder structures in `src/logseq_converter/obsidian/converter.py` (FR-007)
+- [X] T029 [US2] Implement LogSeq properties (`key:: value`) to YAML frontmatter conversion in `src/logseq_converter/obsidian/converter.py` (FR-011)
+- [X] T030 [US2] Handle broken block references/date links (retain original text, log warning) in `src/logseq_converter/obsidian/converter.py` (FR-016)
+- [X] T031 [US2] Add unit tests for link and property transformations in `tests/unit/test_link_property_transformation.py`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -101,12 +101,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Implement logic to identify and extract "Achievements", "Highlights", "Learnings", "Links" sections from journal entries in `src/logseq_converter/obsidian/converter.py` (FR-012)
-- [ ] T033 [US3] Implement logic to save extracted items as separate files in corresponding directories in `src/logseq_converter/obsidian/converter.py` (FR-012)
-- [ ] T034 [US3] Implement filename sanitization for extracted items in `src/logseq_converter/utils.py` (FR-013)
-- [ ] T035 [US3] Implement handling of child blocks and links for extracted items in `src/logseq_converter/obsidian/converter.py`
-- [ ] T036 [US3] Implement removal of `:LOGBOOK:` entries from tasks in `src/logseq_converter/obsidian/converter.py` (FR-014)
-- [ ] T037 [US3] Add unit tests for journal section extraction in `tests/unit/test_journal_extraction.py`
+- [X] T032 [US3] Implement logic to identify and extract "Achievements", "Highlights", "Learnings", "Links" sections from journal entries in `src/logseq_converter/obsidian/converter.py` (FR-012)
+- [X] T033 [US3] Implement logic to save extracted items as separate files in corresponding directories in `src/logseq_converter/obsidian/converter.py` (FR-012)
+- [X] T034 [US3] Implement filename sanitization for extracted items in `src/logseq_converter/utils.py` (FR-013)
+- [X] T035 [US3] Implement handling of child blocks and links for extracted items in `src/logseq_converter/obsidian/converter.py`
+- [X] T036 [US3] Implement removal of `:LOGBOOK:` entries from tasks in `src/logseq_converter/obsidian/converter.py` (FR-014)
+- [X] T037 [US3] Add unit tests for journal section extraction in `tests/unit/test_journal_extraction.py`
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -116,13 +116,13 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T038 Handle filename collisions (append unique suffix) in `src/logseq_converter/utils.py` (Edge Cases)
-- [ ] T039 Handle missing source path (report error) in `src/logseq_converter/cli.py` (Edge Cases)
-- [ ] T040 Handle invalid Markdown (log warnings, continue processing) in `src/logseq_converter/logseq/parser.py` (Edge Cases)
-- [ ] T041 Handle unsupported features (log warnings, leave original syntax) in `src/logseq_converter/logseq/parser.py` (Edge Cases)
+- [X] T038 Handle filename collisions (append unique suffix) in `src/logseq_converter/utils.py` (Edge Cases)
+- [X] T039 Handle missing source path (report error) in `src/logseq_converter/cli.py` (Edge Cases)
+- [X] T040 Handle invalid Markdown (log warnings, continue processing) in `src/logseq_converter/logseq/parser.py` (Edge Cases)
+- [X] T041 Handle unsupported features (log warnings, leave original syntax) in `src/logseq_converter/logseq/parser.py` (Edge Cases)
 - [ ] T042 Ensure processing of large files in a streaming/chunk-based manner in `src/logseq_converter/logseq/parser.py` (NFR-001)
-- [ ] T043 Code cleanup and refactoring across the codebase
-- [ ] T044 Run `quickstart.md` validation, ensuring installation and usage instructions are accurate.
+- [X] T043 Code cleanup and refactoring across the codebase
+- [X] T044 Run `quickstart.md` validation, ensuring installation and usage instructions are accurate.
 
 ---
 

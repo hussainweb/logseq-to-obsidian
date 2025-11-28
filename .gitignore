@@ -1,4 +1,17 @@
+
 # Python
-__pycache__
-.venv
-.ruff_cache
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
+coverage/
+.coverage
+
+# System
+.DS_Store
+.idea/
+.vscode/

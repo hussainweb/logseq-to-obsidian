@@ -23,7 +23,10 @@ wheels = [
 [[package]]
 name = "logseq-converter"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
+dependencies = [
+    { name = "mistletoe" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -32,11 +35,21 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "mistletoe", specifier = ">=1.0.0" }]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest" },
     { name = "ruff" },
+]
+
+[[package]]
+name = "mistletoe"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/99/a42e378cc63df214c80e1487237964b6ffc23a847085c13ebf71f623e9aa/mistletoe-1.5.0.tar.gz", hash = "sha256:68b73be68bf8075ec882e035176d5c379d0d7f3401392c6f39c2cc9cd3264d44", size = 111620, upload-time = "2025-10-18T16:37:09.523Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/c2/bd0fc48dc323035cd65d21c45a3bb5c7b054001bf4ea75e461beb7656e07/mistletoe-1.5.0-py3-none-any.whl", hash = "sha256:d4e77b991b998c5efe3c4eab4e1b472263b5349688acd50d79bd9a6c317a9df1", size = 55262, upload-time = "2025-10-18T16:37:08.376Z" },
 ]
 
 [[package]]
