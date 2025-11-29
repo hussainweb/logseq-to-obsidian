@@ -43,7 +43,7 @@ As a developer, I want to add a new output format (e.g., for Tana, Roam) without
 ### Functional Requirements
 
 - **FR-001**: The system MUST move the statistics calculation functionality from the `logseq_converter.obsidian` module to the `logseq_converter` module.
-- **FR-002**: The system MUST move the content parsing logic (for links, learnings, etc.) from the `logseq_converter.obsidian` module to the `logseq_converter.logseq` module.
+- **FR-002**: The system MUST move the content parsing logic (for links, learnings, etc.) from the `logseq_converter.obsidian` module to the `logseq_converter.logseq` module, and the `logseq_converter.logseq` module MUST be responsible for populating the `cleaned_content` field in `Block` and `Page` objects by removing Logseq-specific properties.
 - **FR-003**: The `logseq_converter.obsidian` module MUST only contain logic to convert Logseq model objects into Obsidian-flavored Markdown files and write them to the filesystem.
 - **FR-004**: The system MUST ensure that all existing functionality behaves identically to the end-user after the refactoring.
 - **FR-005**: All existing automated tests MUST pass after the refactoring is complete.
@@ -53,6 +53,14 @@ As a developer, I want to add a new output format (e.g., for Tana, Roam) without
 - **`logseq_converter`**: The main application module, responsible for orchestrating the conversion process and housing shared functionality like statistics.
 - **`logseq_converter.logseq`**: The module responsible for parsing Logseq-specific syntax and data structures.
 - **`logseq_converter.obsidian`**: The module responsible for converting the parsed data into Obsidian-flavored Markdown files.
+- **`Block`**: Will include a `cleaned_content` field (string) for content with Logseq properties removed.
+- **`Page`**: Will include a `cleaned_content` field (string) for content with Logseq properties removed.
+
+## Clarifications
+
+### Session 2025-11-29
+- Q: What should the new field in the data models (e.g., `Block`, `Page`) be named, which will hold the content with Logseq properties removed? → A: `cleaned_content`
+- Q: Which module should be responsible for populating this new `cleaned_content` field? → A: The `logseq` parsing module, during initial parsing.
 
 ## Success Criteria *(mandatory)*
 
