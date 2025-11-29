@@ -44,7 +44,7 @@ As a developer, I want to add a new output format (e.g., for Tana, Roam) without
 
 - **FR-001**: The system MUST move the statistics calculation functionality from the `logseq_converter.obsidian` module to the `logseq_converter` module.
 - **FR-002**: The system MUST move the content parsing logic (for links, learnings, etc.) from the `logseq_converter.obsidian` module to the `logseq_converter.logseq` module.
-- **FR-003**: The `logseq_converter.obsidian` module MUST only contain logic specific to formatting and writing content for Obsidian.
+- **FR-003**: The `logseq_converter.obsidian` module MUST only contain logic to convert Logseq model objects into Obsidian-flavored Markdown files and write them to the filesystem.
 - **FR-004**: The system MUST ensure that all existing functionality behaves identically to the end-user after the refactoring.
 - **FR-005**: All existing automated tests MUST pass after the refactoring is complete.
 

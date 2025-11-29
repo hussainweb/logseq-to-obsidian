@@ -32,3 +32,4 @@
 ## Notes
 
 - All checks pass. The specification is clear, testable, and ready for the planning phase.
+- Updated spec based on user feedback regarding FR-003 clarification.
