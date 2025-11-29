@@ -85,7 +85,7 @@ class LogSeqParser:
         return content_items
 
     def _parse_content_item(self, block: Block, item_type: str) -> Optional[ContentItem]:
-        description = block.content.strip()
+        description = block.cleaned_content.strip()
         sub_items = self._flatten_block_content_with_indent(block.children, depth=0)
 
         return ContentItem(type=item_type, description=description, sub_items=sub_items)
@@ -95,7 +95,7 @@ class LogSeqParser:
         result = []
         indent = "  " * depth  # 2 spaces per level
         for block in blocks:
-            result.append(f"{indent}- {block.content.strip()}")
+            result.append(f"{indent}- {block.cleaned_content.strip()}")
             if block.children:
                 result.extend(self._flatten_block_content_with_indent(block.children, depth + 1))
         return result
@@ -206,7 +206,8 @@ class LogSeqParser:
                 # Handle any other block-level content (Heading, Paragraph, etc.)
                 content_text = self._extract_markdown_from_block_token(child)
                 if content_text.strip():
-                    block = Block(content=content_text)
+                    cleaned_content = self._clean_content(content_text)
+                    block = Block(content=content_text, cleaned_content=cleaned_content)
                     self._parse_properties(content_text, block)
                     root_blocks.append(block)
 
@@ -229,7 +230,8 @@ class LogSeqParser:
             link_token = None
 
         # Create the block
-        block = Block(content=content)
+        cleaned_content = self._clean_content(content)
+        block = Block(content=content, cleaned_content=cleaned_content)
         self._parse_properties(content, block)
 
         # Store the link token as a private attribute for later use
@@ -299,3 +301,9 @@ class LogSeqParser:
             if key == "id":
                 continue
             block.properties[key] = value.strip()
+
+    def _clean_content(self, content: str) -> str:
+        """Remove Logseq properties from content."""
+        # Remove properties (key:: value)
+        cleaned = re.sub(r"[a-zA-Z0-9_-]+::\s*.+", "", content)
+        return cleaned.strip()

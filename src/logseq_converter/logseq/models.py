@@ -10,6 +10,7 @@ class Block:
     id: Optional[str] = None
     properties: Dict[str, str] = field(default_factory=dict)
     children: List["Block"] = field(default_factory=list)
+    cleaned_content: str = ""
 
 
 @dataclass
@@ -18,6 +19,7 @@ class Page:
     content: str
     blocks: List[Block] = field(default_factory=list)
     properties: Dict[str, str] = field(default_factory=dict)
+    cleaned_content: str = ""
 
 
 @dataclass

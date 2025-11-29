@@ -1,23 +1,11 @@
 import re
-from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional, Tuple
 
 from logseq_converter.logseq.models import ContentItem, LinkItem
 from logseq_converter.logseq.parser import BlockReferenceScanner, LogSeqParser
+from logseq_converter.stats import ConversionStats
 from logseq_converter.utils import generate_content_filename, sanitize_filename
-
-
-@dataclass
-class ConversionStats:
-    journals: int = 0
-    pages: int = 0
-    assets: int = 0
-    block_refs: int = 0
-    links: int = 0
-    learnings: int = 0
-    achievements: int = 0
-    highlights: int = 0
 
 
 class ObsidianConverter:
@@ -288,7 +276,7 @@ class ObsidianConverter:
             return []
 
         # Determine content blocks
-        if re.match(r"^#{1,6}\s+", blocks[0].content):
+        if re.match(r"^#{1,6}\s+", blocks[0].cleaned_content):
             content_blocks = blocks[1:]
         else:
             content_blocks = blocks[0].children

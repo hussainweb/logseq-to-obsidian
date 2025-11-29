@@ -4,7 +4,8 @@ import sys
 from pathlib import Path
 
 from logseq_converter.logseq.parser import BlockReferenceScanner
-from logseq_converter.obsidian.converter import ConversionStats, ObsidianConverter
+from logseq_converter.obsidian.converter import ObsidianConverter
+from logseq_converter.stats import ConversionStats
 from logseq_converter.utils import (
     copy_assets,
     is_markdown_empty,

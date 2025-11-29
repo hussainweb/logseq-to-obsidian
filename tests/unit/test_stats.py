@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
-from logseq_converter.obsidian.converter import ConversionStats, ObsidianConverter
+from logseq_converter.obsidian.converter import ObsidianConverter
+from logseq_converter.stats import ConversionStats
 
 
 def test_stats_initialization():
@@ -48,6 +49,7 @@ def test_extracted_items_tracking():
     parser = MagicMock()
     block_mock = MagicMock()
     block_mock.content = "some content"
+    block_mock.cleaned_content = "some content"
     block_mock.children = []
     parser._parse_blocks.return_value = [block_mock]
 
