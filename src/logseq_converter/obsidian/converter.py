@@ -275,9 +275,12 @@ class ObsidianConverter:
         content_lines = frontmatter
         content_lines.append(f"# {item.caption}\n")
 
+        # Add the top-level bullet with original content
+        content_lines.append(f"- {item.original_content}")
+
         for sub in item.sub_items:
-            # sub already contains indentation, just prepend '- '
-            content_lines.append(f"{sub}")
+            # sub already contains indentation and bullet marker
+            content_lines.append(f"  {sub}")
 
         return filename, "\n".join(content_lines)
 

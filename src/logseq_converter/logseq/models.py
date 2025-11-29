@@ -47,6 +47,7 @@ class Graph:
 class LinkItem:
     caption: str
     url: str
+    original_content: str  # The full original line content from LogSeq
     github_url: Optional[str] = None
     sub_items: List[str] = field(default_factory=list)
 

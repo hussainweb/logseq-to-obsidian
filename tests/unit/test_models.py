@@ -25,10 +25,12 @@ def test_link_item_creation():
     item = LinkItem(
         caption="My Link",
         url="https://example.com",
+        original_content="[My Link](https://example.com)",
         github_url="https://github.com/example",
     )
     assert item.caption == "My Link"
     assert item.url == "https://example.com"
+    assert item.original_content == "[My Link](https://example.com)"
     assert item.github_url == "https://github.com/example"
     assert item.sub_items == []
 

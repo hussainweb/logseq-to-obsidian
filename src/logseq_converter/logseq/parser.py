@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Union
 from mistletoe import Document
 from mistletoe.block_token import List as MistletoeList
 from mistletoe.block_token import ListItem, Paragraph
+from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import LineBreak, Link, RawText
 
 from logseq_converter.logseq.models import Block, ContentItem, Journal, LinkItem, Page
@@ -131,7 +132,7 @@ class LogSeqParser:
                 # We don't add property blocks to sub_items
                 continue
 
-            # Add the child content and recursively add nested children with proper indentation
+            # Add child content and recursively add nested children
             sub_items.append(f"- {child.content.strip()}")
             if child.children:
                 sub_items.extend(
@@ -139,7 +140,11 @@ class LogSeqParser:
                 )
 
         return LinkItem(
-            caption=caption, url=url, github_url=github_url, sub_items=sub_items
+            caption=caption,
+            url=url,
+            original_content=block.content.strip(),
+            github_url=github_url,
+            sub_items=sub_items,
         )
 
     def _find_first_link(self, token) -> Optional[Link]:
@@ -180,8 +185,8 @@ class LogSeqParser:
         # Extract the content from the first paragraph
         first_child = list_item.children[0]
         if isinstance(first_child, Paragraph):
-            # Get the full text content including properties
-            content = self._extract_text_from_token(first_child)
+            # Get the markdown content preserving formatting
+            content = self._extract_markdown_from_paragraph(first_child)
             # Store any link token found in this paragraph for later extraction
             link_token = self._find_first_link(first_child)
         else:
@@ -219,6 +224,23 @@ class LogSeqParser:
             return "".join(self._extract_text_from_token(child) for child in children)
 
         return ""
+
+    def _extract_markdown_from_paragraph(self, paragraph: Paragraph) -> str:
+        """Extract markdown content from a Paragraph token."""
+        with MarkdownRenderer() as renderer:
+            # Render just the children (span tokens) preserving markdown
+            parts = []
+            for child in paragraph.children:
+                if isinstance(child, LineBreak):
+                    # Preserve line breaks as newlines
+                    parts.append("\n")
+                else:
+                    rendered = renderer.render(child)
+                    # Remove trailing newline added by renderer
+                    if rendered and rendered.endswith("\n"):
+                        rendered = rendered[:-1]
+                    parts.append(rendered)
+            return "".join(parts)
 
     def _parse_properties(self, text: str, block: Block) -> None:
         # Regex for key:: value
