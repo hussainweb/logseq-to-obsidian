@@ -269,10 +269,14 @@ class ObsidianConverter:
                                     filename, file_content = self.convert_link_item(
                                         link_item, journal_date
                                     )
-                                    full_filename = f"Links/{filename}"
-                                    extracted_files.append(
-                                        (full_filename, file_content)
-                                    )
+                                    # Only add if content is not empty
+                                    from logseq_converter.utils import is_markdown_empty
+
+                                    if not is_markdown_empty(file_content):
+                                        full_filename = f"Links/{filename}"
+                                        extracted_files.append(
+                                            (full_filename, file_content)
+                                        )
 
                     elif section_name in {
                         "#learnings",
@@ -290,11 +294,15 @@ class ObsidianConverter:
                                     filename, file_content = self.convert_content_item(
                                         content_item, journal_date
                                     )
-                                    dir_name = section_type.capitalize()
-                                    full_filename = f"{dir_name}/{filename}"
-                                    extracted_files.append(
-                                        (full_filename, file_content)
-                                    )
+                                    # Only add if content is not empty
+                                    from logseq_converter.utils import is_markdown_empty
+
+                                    if not is_markdown_empty(file_content):
+                                        dir_name = section_type.capitalize()
+                                        full_filename = f"{dir_name}/{filename}"
+                                        extracted_files.append(
+                                            (full_filename, file_content)
+                                        )
 
                 continue
 

@@ -167,3 +167,35 @@ def parse_journal_date(filename: str) -> Optional[date]:
             continue
 
     return None
+
+
+def is_markdown_empty(content: str) -> bool:
+    """
+    Checks if markdown content is empty or nearly-empty.
+    Removes frontmatter, then checks if remaining content only has hyphens/whitespace.
+    """
+    if not content or not content.strip():
+        return True
+
+    lines = content.split("\n")
+
+    # Skip frontmatter if present
+    start_idx = 0
+    if lines and lines[0].strip() == "---":
+        # Find closing ---
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                start_idx = i + 1
+                break
+
+    # Get content after frontmatter
+    body_content = "\n".join(lines[start_idx:])
+
+    # Remove characters we want to ignore
+    cleaned = (
+        body_content.replace("-", "")
+        .replace("\n", "")
+        .replace(" ", "")
+        .replace("\t", "")
+    )
+    return len(cleaned) == 0

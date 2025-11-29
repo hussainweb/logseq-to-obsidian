@@ -7,6 +7,7 @@ from logseq_converter.logseq.parser import BlockReferenceScanner
 from logseq_converter.obsidian.converter import ObsidianConverter
 from logseq_converter.utils import (
     copy_assets,
+    is_markdown_empty,
     log_progress,
     log_warning,
     validate_output_directory,
@@ -91,7 +92,7 @@ def convert_vault(
                         content, file_path.name
                     )
 
-                    # Save extracted files
+                    # Save extracted files (empty files already filtered by converter)
                     for filename, file_content in extracted_files:
                         extracted_path = destination / filename
                         if not dry_run:
@@ -101,9 +102,15 @@ def convert_vault(
 
                     converted_content = converter.convert_content(content)
 
-                    if not dry_run:
-                        with open(dest_path, "w", encoding="utf-8") as f:
-                            f.write(converted_content)
+                    # Skip writing journal file if it's empty after extraction
+                    if not is_markdown_empty(converted_content):
+                        if not dry_run:
+                            with open(dest_path, "w", encoding="utf-8") as f:
+                                f.write(converted_content)
+                    elif verbose:
+                        log_progress(
+                            f"Skipping empty journal after extraction: {file_path.name}"
+                        )
                 else:
                     log_warning(f"Skipping unrecognized journal file: {file_path.name}")
             except Exception as e:

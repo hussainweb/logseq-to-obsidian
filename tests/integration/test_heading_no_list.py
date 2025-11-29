@@ -58,16 +58,11 @@ def test_heading_without_list_conversion(source_vault_heading, dest_vault_headin
         ret = main()
         assert ret == 0
 
-    # Verify journal file processed
+    # Verify journal file is NOT created (empty after extraction)
     dest_journal = dest_vault_heading / "Daily" / "2025-11-29.md"
-    assert dest_journal.exists()
-
-    with open(dest_journal, "r") as f:
-        content = f.read()
-        # #learnings section should be removed from journal
-        assert "## #learnings" not in content
-        assert "#learnings" not in content
-        assert "LogSeq can have headings without list prefixes" not in content
+    assert not dest_journal.exists(), (
+        "Journal file should not exist when empty after extraction"
+    )
 
     # Verify extracted learnings files
     learnings_dir = dest_vault_heading / "Learnings"
