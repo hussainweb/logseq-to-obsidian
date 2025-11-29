@@ -10,7 +10,7 @@ This is the most important verification step.
 
 1.  **Ensure all dependencies are installed**:
     ```bash
-    uv pip install -e .[test]
+    uv sync
     ```
 
 2.  **Run the full test suite using `pytest`**:

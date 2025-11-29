@@ -13,7 +13,8 @@ The core data flow is:
 
 ### `Block`
 Represents a single block (a bullet point) in Logseq.
-- **`content`**: The raw text content of the block.
+- **`content`**: The raw text content of the block, including Logseq-specific properties.
+- **`cleaned_content`**: The text content of the block after Logseq-specific properties have been removed, but retaining accurate Markdown (links, formatting).
 - **`id`**: The optional unique ID of the block.
 - **`properties`**: A dictionary of key-value properties associated with the block.
 - **`children`**: A list of nested `Block` objects.
@@ -21,7 +22,8 @@ Represents a single block (a bullet point) in Logseq.
 ### `Page`
 Represents a standard Logseq page.
 - **`filename`**: The name of the source file.
-- **`content`**: The raw text content of the page before block parsing begins.
+- **`content`**: The raw text content of the page before block parsing begins, including Logseq-specific properties.
+- **`cleaned_content`**: The text content of the page after Logseq-specific properties have been removed from its blocks, but retaining accurate Markdown (links, formatting).
 - **`blocks`**: A list of top-level `Block` objects on the page.
 - **`properties`**: A dictionary of page-level properties.
 
