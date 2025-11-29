@@ -117,21 +117,12 @@ class LogSeqParser:
         # Extract caption from link children
         caption = self._extract_text_from_token(link_token)
         url = link_token.target
-        github_url = block.properties.get("github_url")
+
+        # Look for a link named "GitHub" (case-insensitive) in the top-level item
+        github_url = self._find_github_link_url(block)
 
         sub_items = []
         for child in block.children:
-            # Check if child is a property definition
-            # Logseq properties in children: key:: value
-            prop_match = re.match(r"^([a-zA-Z0-9_-]+)::\s*(.+)", child.content.strip())
-            if prop_match:
-                key = prop_match.group(1)
-                value = prop_match.group(2)
-                if key == "github_url":
-                    github_url = value
-                # We don't add property blocks to sub_items
-                continue
-
             # Add child content and recursively add nested children
             sub_items.append(f"- {child.content.strip()}")
             if child.children:
@@ -158,6 +149,34 @@ class LogSeqParser:
                 result = self._find_first_link(child)
                 if result:
                     return result
+
+        return None
+
+    def _find_all_links(self, token) -> List[Link]:
+        """Recursively find all Link tokens in the AST."""
+        links = []
+        if isinstance(token, Link):
+            links.append(token)
+
+        children = getattr(token, "children", None)
+        if children is not None:
+            for child in children:
+                links.extend(self._find_all_links(child))
+
+        return links
+
+    def _find_github_link_url(self, block: Block) -> Optional[str]:
+        """Find a link with caption 'GitHub' (case-insensitive) in the block content."""
+        # Parse the block content to find all links
+        doc = Document(block.content)
+
+        for child in doc.children:
+            if isinstance(child, Paragraph):
+                all_links = self._find_all_links(child)
+                for link in all_links:
+                    caption = self._extract_text_from_token(link).strip()
+                    if caption.lower() == "github":
+                        return link.target
 
         return None
 

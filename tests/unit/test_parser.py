@@ -6,8 +6,7 @@ def test_parse_links_block(tmp_path):
 - #links
   - [Google](https://google.com)
     - search engine
-  - [My Project](https://github.com/me/project)
-    - github_url:: https://github.com/me/project
+  - [My Project](https://github.com/me/project) ([GitHub](https://github.com/me/project))
     - A cool project
 """
     f = tmp_path / "2023_11_28.md"

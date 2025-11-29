@@ -20,10 +20,11 @@ def source_vault_links(tmp_path):
 - ## #links
   - [Google](https://google.com)
     - search engine
-  - [GitHub](https://github.com)
-    - github_url:: https://github.com/repo
+  - [GitHub Site](https://github.com) ([GitHub](https://github.com/repo))
+    - GitHub repository
   - [I'm Absolutely Right](https://absolutelyright.lol/) ([GitHub](https://github.com/yoavf/absolutelyright)) #jokes
 	- Fun project that captures how many times Claude says, "You're absolutely right."
+      - I can host it myself from the GitHub repository.
 	- Works by watching Claude's projects directory, so it only works with Claude code.
 	- The front-end visualization is quite interesting; it uses a charting library called [roughViz](https://www.jwilber.me/roughviz/) that produces charts that look hand-drawn. #javascript
 """
@@ -79,13 +80,15 @@ def test_links_extraction(source_vault_links, dest_vault_links):
     with open(absolutely_right_file, "r") as f:
         c = f.read()
         assert "url: https://absolutelyright.lol/" in c
+        assert "github_url: https://github.com/yoavf/absolutelyright" in c
         assert "# I'm Absolutely Right" in c
         assert (
             '- Fun project that captures how many times Claude says, "You\'re absolutely right."'
             in c
         )
+        assert "  - I can host it myself from the GitHub repository." in c
 
-    github_file = links_dir / "GitHub.md"
+    github_file = links_dir / "GitHub Site.md"
     assert github_file.exists()
     with open(github_file, "r") as f:
         c = f.read()
