@@ -1,11 +1,11 @@
-# Research: Module Refactoring Best Practices
+# Research: Module Refactoring and Data Flow
 
-**Decision**: Adhere to standard Python packaging and separation of concerns principles.
-- **Parsing & Data Transformation**: Logic responsible for understanding and parsing the source format (Logseq) should reside in its own dedicated module (`logseq_converter.logseq`).
-- **Output Generation**: Logic responsible for converting the internal data model into a target format (Obsidian) should be in a separate, dedicated module (`logseq_converter.obsidian`).
-- **Core Orchestration & Shared Logic**: The main application module (`logseq_converter`) should handle shared logic (like statistics) and orchestrate the flow from input -> parsing -> output.
+**Decision**: Adhere to a staged data transformation pipeline pattern, aligned with standard Python module separation.
+- **Parsing & Cleaning (`logseq_converter.logseq`)**: This module is responsible for both parsing the raw Logseq files and cleaning the content. It ingests raw text and outputs structured data models (`Page`, `Block`) that are fully populated, including the `cleaned_content` field where Logseq-specific properties have been removed.
+- **Core Orchestration & Shared Logic (`logseq_converter`)**: This main module handles orchestrating the flow from input -> parsing -> output generation. It will also house any logic that is truly shared across all modules, such as statistics calculation.
+- **Output Generation (`logseq_converter.obsidian`)**: This module's sole responsibility is to take the clean, structured data models from the parsing stage and convert them into the target format (Obsidian Markdown). It should not contain any parsing or cleaning logic.
 
-**Rationale**: This approach aligns with the Single Responsibility Principle, making the codebase more modular, easier to maintain, and simpler to extend. By decoupling parsing from output generation, we can add new output formats in the future (e.g., for Tana, Roam) with minimal changes to the core parsing logic. This directly supports the goals outlined in the feature specification.
+**Rationale**: This approach creates a clear, unidirectional data flow (`raw file -> clean data model -> output file`). This enhances the Single Responsibility Principle, making the codebase more modular and easier to debug. By ensuring the `logseq` module provides a "complete" and clean data model, the contract between the modules is simplified, and future output modules can be added with minimal effort, as they can rely on the same clean data source.
 
 **Alternatives considered**:
-- **Monolithic Module**: Keeping all logic in one place. This was rejected as it leads to tightly coupled code that is difficult to maintain and extend, which is the problem this refactoring effort aims to solve.
+- **Cleaning in the Output Module**: This was rejected. Having the `obsidian` module perform the cleaning would mean this logic would have to be duplicated for any new output format added in the future. It violates the DRY (Don't Repeat Yourself) principle and complicates the output modules unnecessarily.
