@@ -10,6 +10,9 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "mistletoe>=1.0.0",
+    "pydantic>=2.12.5",
+    "requests>=2.32.5",
+    "typer>=0.20.0",
 ]
 
 [dependency-groups]

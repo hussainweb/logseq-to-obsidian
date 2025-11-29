@@ -13,16 +13,16 @@
 
 **Purpose**: Project initialization and basic structure for the new `tana` module.
 
-- [ ] T001 Create the directory structure outlined in `plan.md`: `src/logseq_converter/tana/` and `tests/unit/tana/`.
-- [ ] T002 [P] Create empty file `src/logseq_converter/tana/__init__.py`.
-- [ ] T003 [P] Create empty file `src/logseq_converter/tana/models.py`.
-- [ ] T004 [P] Create empty file `src/logseq_converter/tana/client.py`.
-- [ ] T005 [P] Create empty file `src/logseq_converter/tana/converter.py`.
-- [ ] T006 [P] Create empty file `tests/unit/tana/__init__.py`.
-- [ ] T007 [P] Create empty file `tests/unit/tana/test_client.py`.
-- [ ] T008 [P] Create empty file `tests/unit/tana/test_converter.py`.
-- [ ] T009 [P] Create empty file `tests/integration/test_tana_conversion.py`.
-- [ ] T010 Add `requests` dependency to `pyproject.toml` using `uv add requests`.
+- [X] T001 Create the directory structure outlined in `plan.md`: `src/logseq_converter/tana/` and `tests/unit/tana/`.
+- [X] T002 [P] Create empty file `src/logseq_converter/tana/__init__.py`.
+- [X] T003 [P] Create empty file `src/logseq_converter/tana/models.py`.
+- [X] T004 [P] Create empty file `src/logseq_converter/tana/client.py`.
+- [X] T005 [P] Create empty file `src/logseq_converter/tana/converter.py`.
+- [X] T006 [P] Create empty file `tests/unit/tana/__init__.py`.
+- [X] T007 [P] Create empty file `tests/unit/tana/test_client.py`.
+- [X] T008 [P] Create empty file `tests/unit/tana/test_converter.py`.
+- [X] T009 [P] Create empty file `tests/integration/test_tana_conversion.py`.
+- [X] T010 Add `requests` dependency to `pyproject.toml` using `uv add requests`.
 
 ---
 
@@ -30,8 +30,8 @@
 
 **Purpose**: Core data models and client structure that must be complete before the main logic can be implemented.
 
-- [ ] T011 [US1] Implement Pydantic models (`TanaNode`, `TanaSupertagRef`, `TanaField`, `TanaAPIPayload`) in `src/logseq_converter/tana/models.py` as defined in `data-model.md`.
-- [ ] T012 [US1] Implement the basic structure for the Tana API client in `src/logseq_converter/tana/client.py`. This includes creating a `TanaClient` class that reads the `TANA_API_KEY` environment variable in its constructor.
+- [X] T011 [US1] Implement Pydantic models (`TanaNode`, `TanaSupertagRef`, `TanaField`, `TanaAPIPayload`) in `src/logseq_converter/tana/models.py` as defined in `data-model.md`.
+- [X] T012 [US1] Implement the basic structure for the Tana API client in `src/logseq_converter/tana/client.py`. This includes creating a `TanaClient` class that reads the `TANA_API_KEY` environment variable in its constructor.
 
 ---
 
@@ -45,17 +45,17 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T013 [P] [US1] Write unit tests for the Tana data models in `src/logseq_converter/tana/models.py` to ensure validation works as expected.
-- [ ] T014 [P] [US1] Write failing unit tests in `tests/unit/tana/test_client.py` for the Tana client's core functions (authentication, batching, sending requests). Use `requests-mock`.
-- [ ] T015 [P] [US1] Write failing unit tests in `tests/unit/tana/test_converter.py` for the main conversion logic, mocking the `TanaClient`.
+- [X] T013 [P] [US1] Write unit tests for the Tana data models in `src/logseq_converter/tana/models.py` to ensure validation works as expected.
+- [X] T014 [P] [US1] Write failing unit tests in `tests/unit/tana/test_client.py` for the Tana client's core functions (authentication, batching, sending requests). Use `requests-mock`.
+- [X] T015 [P] [US1] Write failing unit tests in `tests/unit/tana/test_converter.py` for the main conversion logic, mocking the `TanaClient`.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement the core API request logic in `src/logseq_converter/tana/client.py`. This method should handle making a `POST` request, setting the `Authorization` header, and respecting the 1-second delay. (Depends on T012)
-- [ ] T017 [US1] Implement node batching logic in `src/logseq_converter/tana/client.py` to handle the 100-node limit per API call. (Depends on T016)
-- [ ] T018 [US1] Implement the main conversion logic in `src/logseq_converter/tana/converter.py`. This function should transform LogSeq `Block` objects into `TanaNode` data structures. (Depends on T011)
-- [ ] T019 [US1] Implement the main CLI command in `src/logseq_converter/cli.py`. Add the `tana` subcommand, which should initialize the `TanaClient` and the `TanaConverter` and orchestrate the import process.
-- [ ] T020 [US1] Integrate the converter and client in `src/logseq_converter/cli.py`. The CLI command should call the converter, which in turn uses the client to send the batched nodes to Tana. (Depends on T017, T018, T019)
+- [X] T016 [US1] Implement the core API request logic in `src/logseq_converter/tana/client.py`. This method should handle making a `POST` request, setting the `Authorization` header, and respecting the 1-second delay. (Depends on T012)
+- [X] T017 [US1] Implement node batching logic in `src/logseq_converter/tana/client.py` to handle the 100-node limit per API call. (Depends on T016)
+- [X] T018 [US1] Implement the main conversion logic in `src/logseq_converter/tana/converter.py`. This function should transform LogSeq `Block` objects into `TanaNode` data structures. (Depends on T011)
+- [X] T019 [US1] Implement the main CLI command in `src/logseq_converter/cli.py`. Add the `tana` subcommand, which should initialize the `TanaClient` and the `TanaConverter` and orchestrate the import process.
+- [X] T020 [US1] Integrate the converter and client in `src/logseq_converter/cli.py`. The CLI command should call the converter, which in turn uses the client to send the batched nodes to Tana. (Depends on T017, T018, T019)
 
 ---
 
@@ -63,11 +63,11 @@
 
 **Purpose**: Improvements that affect multiple user stories and overall usability.
 
-- [ ] T021 [P] Implement comprehensive error handling in `src/logseq_converter/tana/client.py` to manage API errors (e.g., 429 Rate Limit, 401 Unauthorized) and network issues.
-- [ ] T022 [P] Add logging throughout the `tana` module to provide progress updates and diagnostic information to the user via `stderr`.
-- [ ] T023 Write the integration test in `tests/integration/test_tana_conversion.py` that runs the full process against a mocked Tana API.
-- [ ] T024 [P] Update the project's main `README.md` to include documentation for the new `tana` subcommand, referencing the `quickstart.md`.
-- [ ] T025 [P] Manually validate the end-to-end flow by running the command as described in `quickstart.md`.
+- [X] T021 [P] Implement comprehensive error handling in `src/logseq_converter/tana/client.py` to manage API errors (e.g., 429 Rate Limit, 401 Unauthorized) and network issues.
+- [X] T022 [P] Add logging throughout the `tana` module to provide progress updates and diagnostic information to the user via `stderr`.
+- [X] T023 Write the integration test in `tests/integration/test_tana_conversion.py` that runs the full process against a mocked Tana API.
+- [X] T024 [P] Update the project's main `README.md` to include documentation for the new `tana` subcommand, referencing the `quickstart.md`.
+- [X] T025 [P] Manually validate the end-to-end flow by running the command as described in `quickstart.md`.
 
 ---
 

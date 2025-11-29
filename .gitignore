@@ -1,6 +1,8 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .venv/
 venv/
 dist/
@@ -9,8 +11,13 @@ dist/
 .pytest_cache/
 coverage/
 .coverage
+*.log
+.env
+.env.*
 
 # System
 .DS_Store
 .idea/
 .vscode/
+*.swp
+*.tmp

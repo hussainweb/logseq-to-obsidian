@@ -181,21 +181,168 @@ def _process_pages(
             continue
 
 
+def convert_to_tana(
+    input_dir: Path,
+    target_node_id: str = "INBOX",
+    verbose: bool = False,
+    dry_run: bool = False,
+) -> int:
+    """Convert LogSeq graph to Tana workspace."""
+    from logseq_converter.logseq.parser import LogSeqParser
+    from logseq_converter.tana.client import TanaClient
+    from logseq_converter.tana.converter import TanaConverter
+
+    if not input_dir.exists():
+        log_warning(f"Input directory '{input_dir}' does not exist.")
+        return 1
+
+    # Validate LogSeq directory structure
+    pages_dir = input_dir / "pages"
+    journals_dir = input_dir / "journals"
+
+    if not pages_dir.exists() and not journals_dir.exists():
+        log_warning(
+            f"Input directory '{input_dir}' does not appear to be a "
+            "valid LogSeq graph. Missing 'pages' or 'journals' directories."
+        )
+        return 1
+
+    try:
+        client = TanaClient()
+    except ValueError as e:
+        log_warning(str(e))
+        return 1
+
+    log_progress(f"Converting LogSeq graph '{input_dir}' to Tana...")
+
+    converter = TanaConverter()
+    parser = LogSeqParser()
+    all_nodes = []
+
+    # Process pages
+    if pages_dir.exists():
+        log_progress("Processing pages...")
+        for file_path in pages_dir.glob("*.md"):
+            try:
+                if verbose:
+                    log_progress(f"Processing page: {file_path.name}")
+
+                parsed = parser.parse(file_path)
+                if parsed and parsed.blocks:
+                    for block in parsed.blocks:
+                        node = converter.convert_block(block)
+                        all_nodes.append(node)
+            except Exception as e:
+                log_warning(f"Error processing page {file_path.name}: {e}")
+                continue
+
+    # Process journals
+    if journals_dir.exists():
+        log_progress("Processing journals...")
+        for file_path in journals_dir.glob("*.md"):
+            try:
+                if verbose:
+                    log_progress(f"Processing journal: {file_path.name}")
+
+                parsed = parser.parse(file_path)
+                if parsed and parsed.blocks:
+                    for block in parsed.blocks:
+                        node = converter.convert_block(block)
+                        all_nodes.append(node)
+            except Exception as e:
+                log_warning(f"Error processing journal {file_path.name}: {e}")
+                continue
+
+    if not all_nodes:
+        log_warning("No content found to import.")
+        return 1
+
+    log_progress(f"Sending {len(all_nodes)} nodes to Tana (target: {target_node_id})...")
+
+    if dry_run:
+        log_progress("Dry run enabled. Skipping actual API calls.")
+        return 0
+
+    try:
+        client.send_nodes(all_nodes, target_node_id=target_node_id)
+        log_progress("Import complete!")
+        return 0
+    except Exception as e:
+        log_warning(f"Error sending nodes to Tana: {e}")
+        return 1
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Convert LogSeq graph to Obsidian vault")
-    parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
-    parser.add_argument(
+    # Check if we're being called with the old syntax (no subcommand)
+    # This maintains backward compatibility
+    if len(sys.argv) >= 3 and sys.argv[1] not in ["convert", "tana", "-h", "--help"]:
+        # Old syntax: logseq-converter <source> <destination> [options]
+        parser = argparse.ArgumentParser(description="Convert LogSeq graph to Obsidian vault")
+        parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
+        parser.add_argument(
+            "destination",
+            type=Path,
+            help="Destination Obsidian vault directory",
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="store_true",
+            help="Enable verbose logging",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Perform a dry run without writing changes",
+        )
+        args = parser.parse_args()
+        return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
+
+    # New syntax with subcommands
+    parser = argparse.ArgumentParser(description="Convert LogSeq graph to Obsidian vault or Tana workspace")
+    subparsers = parser.add_subparsers(dest="command", help="Conversion target")
+
+    # Convert subcommand (for Obsidian)
+    convert_parser = subparsers.add_parser("convert", help="Convert LogSeq graph to Obsidian vault")
+    convert_parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
+    convert_parser.add_argument(
         "destination",
         type=Path,
         help="Destination Obsidian vault directory",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Enable verbose logging",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without writing changes",
+    )
+
+    # Tana subcommand
+    tana_parser = subparsers.add_parser("tana", help="Convert LogSeq graph to Tana workspace")
+    tana_parser.add_argument(
+        "--input-dir",
+        type=Path,
+        required=True,
+        help="Source LogSeq graph directory",
+    )
+    tana_parser.add_argument(
+        "--target-node-id",
+        type=str,
+        default="INBOX",
+        help="Target node ID in Tana (default: INBOX)",
+    )
+    tana_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging",
+    )
+    tana_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Perform a dry run without writing changes",
@@ -203,7 +350,13 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
+    if args.command == "convert":
+        return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
+    elif args.command == "tana":
+        return convert_to_tana(args.input_dir, args.target_node_id, args.verbose, args.dry_run)
+    else:
+        parser.print_help()
+        return 1
 
 
 if __name__ == "__main__":
