@@ -177,139 +177,165 @@ class ObsidianConverter:
 
         parser = LogSeqParser()
         journal_date = parse_journal_date(original_filename)
-        if not journal_date:
-            # If we can't parse date, we can't properly set frontmatter date
-            # But we should probably still try?
-            # For now, default to today or skip?
-            # Let's use today as fallback or error?
-            # The original filename is passed, e.g. 2023_11_28.md
-            pass
 
         i = 0
         while i < len(lines):
             line = lines[i]
-            # Match #links (case insensitive)
-            # Support formats:
-            # - "- #links" or "- ## #links" (with list marker)
-            # - "## #links" (heading without list marker)
-            match = re.match(
-                r"^(?:-\s+)?(#{1,6}\s+)?(#links|#learnings|#achievements|#highlights)\s*$",
-                line,
-                re.IGNORECASE,
-            )
+            section_match = self._match_section_header(line)
 
-            if match:
-                section_name = match.group(2).lower()  # e.g., #links
-                # (group 2 because group 1 is optional heading marker)
+            if section_match:
+                section_name = section_match.group(2).lower()
                 initial_indent = len(line) - len(line.lstrip())
-                section_lines = [line]
-                i += 1  # Move to the next line after the section header
+                
+                # Capture section lines
+                section_lines, next_idx = self._capture_section_lines(
+                    lines, i, initial_indent
+                )
+                i = next_idx
 
-                # Capture children lines that are more indented or continuation lines
-                while i < len(lines):
-                    child_line = lines[i]
-
-                    # If the line is empty or only contains whitespace,
-                    # it's considered part of the current section
-                    if not child_line.strip():
-                        section_lines.append(child_line)
-                        i += 1
-                        continue
-
-                    current_indent = len(child_line) - len(child_line.lstrip())
-
-                    # For headings without list markers, capture all following list items
-                    # until we hit another heading or end of content
-                    if initial_indent == 0 and re.match(r"^#{1,6}\s+", line):
-                        # Heading at root level - capture all list items that follow
-                        if re.match(r"^#{1,6}\s+", child_line):
-                            # Hit another heading, stop
-                            break
-                        section_lines.append(child_line)
-                        i += 1
-                        continue
-
-                    # A new top-level block is identified if:
-                    # 1. It starts with a list item marker ('-' or '*')
-                    # 2. Its indentation is less than or equal to the initial
-                    #    section header's indentation
-                    is_new_block_at_or_above_section_level = (
-                        re.match(r"^(-|\*)\s+", child_line)
-                        and current_indent <= initial_indent
-                    )
-
-                    if is_new_block_at_or_above_section_level:
-                        break  # End of current section content
-
-                    section_lines.append(child_line)
-                    i += 1
-
-                # Construct block text
-                block_text = "\n".join(section_lines)
-
-                # Parse this block
-                blocks = parser._parse_blocks(block_text)
-
-                if blocks:
-                    # If first block is a markdown heading (## #tag), content follows
-                    # Otherwise, first block contains the section and its children
-                    if re.match(r"^#{1,6}\s+", blocks[0].content):
-                        # Heading block - actual content is in subsequent blocks
-                        content_blocks = blocks[1:]
-                    else:
-                        # List item block - content is in its children
-                        content_blocks = blocks[0].children
-
-                    if section_name == "#links":
-                        # Extract link items from this block
-                        if journal_date:
-                            for child in content_blocks:
-                                link_item = parser._parse_link_item(child)
-                                if link_item:
-                                    filename, file_content = self.convert_link_item(
-                                        link_item, journal_date
-                                    )
-                                    # Only add if content is not empty
-                                    from logseq_converter.utils import is_markdown_empty
-
-                                    if not is_markdown_empty(file_content):
-                                        full_filename = f"Links/{filename}"
-                                        extracted_files.append(
-                                            (full_filename, file_content)
-                                        )
-
-                    elif section_name in {
-                        "#learnings",
-                        "#achievements",
-                        "#highlights",
-                    }:
-                        # Handle content sections
-                        if journal_date:
-                            section_type = section_name.lstrip("#")
-                            for child in content_blocks:
-                                content_item = parser._parse_content_item(
-                                    child, section_type
-                                )
-                                if content_item:
-                                    filename, file_content = self.convert_content_item(
-                                        content_item, journal_date
-                                    )
-                                    # Only add if content is not empty
-                                    from logseq_converter.utils import is_markdown_empty
-
-                                    if not is_markdown_empty(file_content):
-                                        dir_name = section_type.capitalize()
-                                        full_filename = f"{dir_name}/{filename}"
-                                        extracted_files.append(
-                                            (full_filename, file_content)
-                                        )
-
+                # Process the captured section
+                new_extracted = self._process_section_content(
+                    section_lines, section_name, journal_date, parser
+                )
+                extracted_files.extend(new_extracted)
                 continue
 
             new_lines.append(line)
             i += 1
 
         return "\n".join(new_lines), extracted_files
+
+    def _match_section_header(self, line: str) -> Optional[re.Match]:
+        """Check if line is a section header."""
+        return re.match(
+            r"^(?:-\s+)?(#{1,6}\s+)?(#links|#learnings|#achievements|#highlights)\s*$",
+            line,
+            re.IGNORECASE,
+        )
+
+    def _capture_section_lines(
+        self, lines: list[str], start_idx: int, initial_indent: int
+    ) -> tuple[list[str], int]:
+        """
+        Captures lines belonging to a section starting at start_idx.
+        Returns (captured_lines, next_line_index).
+        """
+        section_lines = [lines[start_idx]]
+        i = start_idx + 1
+
+        while i < len(lines):
+            line = lines[i]
+
+            # Empty lines are part of the section
+            if not line.strip():
+                section_lines.append(line)
+                i += 1
+                continue
+
+            current_indent = len(line) - len(line.lstrip())
+
+            # Check for heading boundaries
+            # If we started with a heading (initial_indent == 0 and starts with #), 
+            # we stop at the next heading.
+            is_root_heading = initial_indent == 0 and re.match(r"^#{1,6}\s+", lines[start_idx])
+            if is_root_heading:
+                if re.match(r"^#{1,6}\s+", line):
+                    break
+                section_lines.append(line)
+                i += 1
+                continue
+
+            # Check for list item boundaries
+            # Stop if we find a new list item at same or lower indentation level
+            is_new_block = (
+                re.match(r"^(-|\*)\s+", line)
+                and current_indent <= initial_indent
+            )
+
+            if is_new_block:
+                break
+
+            section_lines.append(line)
+            i += 1
+
+        return section_lines, i
+
+    def _process_section_content(
+        self,
+        section_lines: list[str],
+        section_name: str,
+        journal_date: Optional[date],
+        parser: "LogSeqParser",
+    ) -> list[tuple[str, str]]:
+        """
+        Parses and converts content from a captured section.
+        """
+        if not journal_date:
+            return []
+
+        extracted = []
+        block_text = "\n".join(section_lines)
+        blocks = parser._parse_blocks(block_text)
+
+        if not blocks:
+            return []
+
+        # Determine content blocks
+        if re.match(r"^#{1,6}\s+", blocks[0].content):
+            content_blocks = blocks[1:]
+        else:
+            content_blocks = blocks[0].children
+
+        if section_name == "#links":
+            extracted.extend(
+                self._extract_link_items(content_blocks, journal_date, parser)
+            )
+        elif section_name in {"#learnings", "#achievements", "#highlights"}:
+            section_type = section_name.lstrip("#")
+            extracted.extend(
+                self._extract_content_items(
+                    content_blocks, section_type, journal_date, parser
+                )
+            )
+
+        return extracted
+
+    def _extract_link_items(
+        self, blocks: list, journal_date: date, parser: "LogSeqParser"
+    ) -> list[tuple[str, str]]:
+        results = []
+        from logseq_converter.utils import is_markdown_empty
+
+        for child in blocks:
+            link_item = parser._parse_link_item(child)
+            if link_item:
+                filename, file_content = self.convert_link_item(link_item, journal_date)
+                if not is_markdown_empty(file_content):
+                    full_filename = f"Links/{filename}"
+                    results.append((full_filename, file_content))
+        return results
+
+    def _extract_content_items(
+        self,
+        blocks: list,
+        section_type: str,
+        journal_date: date,
+        parser: "LogSeqParser",
+    ) -> list[tuple[str, str]]:
+        results = []
+        from logseq_converter.utils import is_markdown_empty
+
+        for child in blocks:
+            content_item = parser._parse_content_item(child, section_type)
+            if content_item:
+                filename, file_content = self.convert_content_item(
+                    content_item, journal_date
+                )
+                if not is_markdown_empty(file_content):
+                    dir_name = section_type.capitalize()
+                    full_filename = f"{dir_name}/{filename}"
+                    results.append((full_filename, file_content))
+        return results
 
     def _transform_properties(self, content: str) -> str:
         lines = content.split("\n")

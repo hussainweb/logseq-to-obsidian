@@ -71,59 +71,31 @@ def convert_vault(
     log_progress("Processing files...")
 
     # Process journals
-    if journals_dir.exists():
-        for file_path in journals_dir.glob("*.md"):
-            try:
-                if verbose:
-                    log_progress(f"Processing journal: {file_path.name}")
-                dest_rel_path = converter.transform_journal_filename(file_path.name)
-                if dest_rel_path:
-                    dest_path = destination / dest_rel_path
-                    if not dry_run:
-                        dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-
-                    # Extract sections (US3)
-                    # TODO: Integrate new extraction logic here using LogSeqParser
-                    # For now, we keep existing logic but we will replace it/enhance it
-                    content, extracted_files = converter.extract_sections(
-                        content, file_path.name
-                    )
-
-                    # Save extracted files (empty files already filtered by converter)
-                    for filename, file_content in extracted_files:
-                        extracted_path = destination / filename
-                        if not dry_run:
-                            extracted_path.parent.mkdir(parents=True, exist_ok=True)
-                            with open(extracted_path, "w", encoding="utf-8") as f:
-                                f.write(file_content)
-
-                    converted_content = converter.convert_content(content)
-
-                    # Skip writing journal file if it's empty after extraction
-                    if not is_markdown_empty(converted_content):
-                        if not dry_run:
-                            with open(dest_path, "w", encoding="utf-8") as f:
-                                f.write(converted_content)
-                    elif verbose:
-                        log_progress(
-                            f"Skipping empty journal after extraction: {file_path.name}"
-                        )
-                else:
-                    log_warning(f"Skipping unrecognized journal file: {file_path.name}")
-            except Exception as e:
-                log_warning(f"Error processing journal {file_path.name}: {e}")
-                continue
+    _process_journals(journals_dir, destination, converter, verbose, dry_run)
 
     # Process pages
-    if pages_dir.exists():
-        for file_path in pages_dir.glob("*.md"):
-            try:
-                if verbose:
-                    log_progress(f"Processing page: {file_path.name}")
-                dest_rel_path = converter.transform_page_filename(file_path.name)
+    _process_pages(pages_dir, destination, converter, verbose, dry_run)
+
+    log_progress("Conversion complete.")
+    return 0
+
+
+def _process_journals(
+    journals_dir: Path,
+    destination: Path,
+    converter: ObsidianConverter,
+    verbose: bool,
+    dry_run: bool,
+) -> None:
+    if not journals_dir.exists():
+        return
+
+    for file_path in journals_dir.glob("*.md"):
+        try:
+            if verbose:
+                log_progress(f"Processing journal: {file_path.name}")
+            dest_rel_path = converter.transform_journal_filename(file_path.name)
+            if dest_rel_path:
                 dest_path = destination / dest_rel_path
                 if not dry_run:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -131,17 +103,67 @@ def convert_vault(
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
+                # Extract sections (US3)
+                content, extracted_files = converter.extract_sections(
+                    content, file_path.name
+                )
+
+                # Save extracted files (empty files already filtered by converter)
+                for filename, file_content in extracted_files:
+                    extracted_path = destination / filename
+                    if not dry_run:
+                        extracted_path.parent.mkdir(parents=True, exist_ok=True)
+                        with open(extracted_path, "w", encoding="utf-8") as f:
+                            f.write(file_content)
+
                 converted_content = converter.convert_content(content)
 
-                if not dry_run:
-                    with open(dest_path, "w", encoding="utf-8") as f:
-                        f.write(converted_content)
-            except Exception as e:
-                log_warning(f"Error processing page {file_path.name}: {e}")
-                continue
+                # Skip writing journal file if it's empty after extraction
+                if not is_markdown_empty(converted_content):
+                    if not dry_run:
+                        with open(dest_path, "w", encoding="utf-8") as f:
+                            f.write(converted_content)
+                elif verbose:
+                    log_progress(
+                        f"Skipping empty journal after extraction: {file_path.name}"
+                    )
+            else:
+                log_warning(f"Skipping unrecognized journal file: {file_path.name}")
+        except Exception as e:
+            log_warning(f"Error processing journal {file_path.name}: {e}")
+            continue
 
-    log_progress("Conversion complete.")
-    return 0
+
+def _process_pages(
+    pages_dir: Path,
+    destination: Path,
+    converter: ObsidianConverter,
+    verbose: bool,
+    dry_run: bool,
+) -> None:
+    if not pages_dir.exists():
+        return
+
+    for file_path in pages_dir.glob("*.md"):
+        try:
+            if verbose:
+                log_progress(f"Processing page: {file_path.name}")
+            dest_rel_path = converter.transform_page_filename(file_path.name)
+            dest_path = destination / dest_rel_path
+            if not dry_run:
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            converted_content = converter.convert_content(content)
+
+            if not dry_run:
+                with open(dest_path, "w", encoding="utf-8") as f:
+                    f.write(converted_content)
+        except Exception as e:
+            log_warning(f"Error processing page {file_path.name}: {e}")
+            continue
 
 
 def main() -> int:
