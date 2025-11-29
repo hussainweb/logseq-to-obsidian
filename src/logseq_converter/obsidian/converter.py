@@ -276,7 +276,8 @@ class ObsidianConverter:
         content_lines.append(f"# {item.caption}\n")
 
         for sub in item.sub_items:
-            content_lines.append(f"- {sub}")
+            # sub already contains indentation, just prepend '- '
+            content_lines.append(f"{sub}")
 
         return filename, "\n".join(content_lines)
 
@@ -301,6 +302,7 @@ class ObsidianConverter:
         content_lines.append(f"{item.description}\n")
 
         for sub in item.sub_items:
-            content_lines.append(f"- {sub}")
+            # sub already contains indentation, just prepend '- '
+            content_lines.append(f"{sub}")
 
         return filename, "\n".join(content_lines)

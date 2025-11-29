@@ -41,11 +41,11 @@ def test_parse_links_block(tmp_path):
     assert link1.url == "https://google.com"
     assert link1.github_url is None
     assert len(link1.sub_items) == 1
-    assert link1.sub_items[0] == "search engine"
+    assert link1.sub_items[0] == "- search engine"
 
     link2 = links[1]
     assert link2.caption == "My Project"
     assert link2.url == "https://github.com/me/project"
     assert link2.github_url == "https://github.com/me/project"
     assert len(link2.sub_items) == 1
-    assert link2.sub_items[0] == "A cool project"
+    assert link2.sub_items[0] == "- A cool project"

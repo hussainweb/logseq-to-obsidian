@@ -23,6 +23,12 @@ def source_vault_content(tmp_path):
   - Learned Python
 - ## #achievements
   - Completed the project
+    - It was a great learning opportunity
+    - I learned a lot
+      - Azure Kubernetes Service
+      - Azure Container Registry
+      - Azure Key Vault
+    - It might be time for Azure certification
 - ## #highlights
   - Best day ever
     - Had fun
@@ -78,6 +84,15 @@ def test_content_extraction(source_vault_content, dest_vault_content):
 
     project_file = achievements_dir / "Completed project.md"
     assert project_file.exists()
+    with open(project_file, "r") as f:
+        c = f.read()
+        assert "Completed the project" in c
+        assert "- It was a great learning opportunity" in c
+        assert "- I learned a lot" in c
+        assert "  - Azure Kubernetes Service" in c
+        assert "  - Azure Container Registry" in c
+        assert "  - Azure Key Vault" in c
+        assert "- It might be time for Azure certification" in c
 
     # Verify highlights
     highlights_dir = dest_vault_content / "Highlights"

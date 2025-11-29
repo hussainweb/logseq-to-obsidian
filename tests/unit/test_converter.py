@@ -13,7 +13,7 @@ def test_convert_link_item():
         caption="My Link",
         url="https://example.com",
         github_url="https://github.com/example",
-        sub_items=["Note 1", "Note 2"],
+        sub_items=["- Note 1", "- Note 2"],
     )
     journal_date = date(2023, 11, 28)
 

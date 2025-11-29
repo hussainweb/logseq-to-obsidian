@@ -24,7 +24,7 @@ def test_parse_content_blocks(tmp_path):
     learning = next(i for i in items if i.type == "learnings")
     assert learning.description == "Learned about Rust"
     assert len(learning.sub_items) == 1
-    assert learning.sub_items[0] == "It's memory safe"
+    assert learning.sub_items[0] == "- It's memory safe"
 
     achievement = next(i for i in items if i.type == "achievements")
     assert achievement.description == "Completed the project"

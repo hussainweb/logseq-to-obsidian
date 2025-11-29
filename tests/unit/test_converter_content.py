@@ -12,7 +12,7 @@ def test_convert_content_item_learning():
     item = ContentItem(
         type="learnings",
         description="Learned about Python",
-        sub_items=["It's great", "Very readable"],
+        sub_items=["- It's great", "- Very readable"],
     )
     journal_date = date(2023, 11, 28)
 
@@ -48,7 +48,7 @@ def test_convert_content_item_highlight():
     item = ContentItem(
         type="highlights",
         description="Best day ever",
-        sub_items=["Had fun", "Met friends"],
+        sub_items=["- Had fun", "- Met friends"],
     )
     journal_date = date(2023, 11, 28)
 
