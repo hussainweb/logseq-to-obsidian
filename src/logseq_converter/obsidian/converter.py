@@ -2,9 +2,23 @@ import re
 from datetime import date, datetime
 from typing import Optional, Tuple
 
+from dataclasses import dataclass, field
+
 from logseq_converter.logseq.models import ContentItem, LinkItem
 from logseq_converter.logseq.parser import BlockReferenceScanner
 from logseq_converter.utils import generate_content_filename, sanitize_filename
+
+
+@dataclass
+class ConversionStats:
+    journals: int = 0
+    pages: int = 0
+    assets: int = 0
+    block_refs: int = 0
+    links: int = 0
+    learnings: int = 0
+    achievements: int = 0
+    highlights: int = 0
 
 
 class ObsidianConverter:
@@ -17,8 +31,13 @@ class ObsidianConverter:
         "exclude-from-graph-view",
     }
 
-    def __init__(self, scanner: Optional[BlockReferenceScanner] = None):
+    def __init__(
+        self,
+        scanner: Optional[BlockReferenceScanner] = None,
+        stats: Optional[ConversionStats] = None,
+    ):
         self.scanner = scanner
+        self.stats = stats or ConversionStats()
 
     def transform_journal_filename(self, filename: str) -> Optional[str]:
         """
@@ -186,7 +205,7 @@ class ObsidianConverter:
             if section_match:
                 section_name = section_match.group(2).lower()
                 initial_indent = len(line) - len(line.lstrip())
-                
+
                 # Capture section lines
                 section_lines, next_idx = self._capture_section_lines(
                     lines, i, initial_indent
@@ -235,9 +254,11 @@ class ObsidianConverter:
             current_indent = len(line) - len(line.lstrip())
 
             # Check for heading boundaries
-            # If we started with a heading (initial_indent == 0 and starts with #), 
+            # If we started with a heading (initial_indent == 0 and starts with #),
             # we stop at the next heading.
-            is_root_heading = initial_indent == 0 and re.match(r"^#{1,6}\s+", lines[start_idx])
+            is_root_heading = initial_indent == 0 and re.match(
+                r"^#{1,6}\s+", lines[start_idx]
+            )
             if is_root_heading:
                 if re.match(r"^#{1,6}\s+", line):
                     break
@@ -248,8 +269,7 @@ class ObsidianConverter:
             # Check for list item boundaries
             # Stop if we find a new list item at same or lower indentation level
             is_new_block = (
-                re.match(r"^(-|\*)\s+", line)
-                and current_indent <= initial_indent
+                re.match(r"^(-|\*)\s+", line) and current_indent <= initial_indent
             )
 
             if is_new_block:
@@ -287,16 +307,21 @@ class ObsidianConverter:
             content_blocks = blocks[0].children
 
         if section_name == "#links":
-            extracted.extend(
-                self._extract_link_items(content_blocks, journal_date, parser)
-            )
+            items = self._extract_link_items(content_blocks, journal_date, parser)
+            self.stats.links += len(items)
+            extracted.extend(items)
         elif section_name in {"#learnings", "#achievements", "#highlights"}:
             section_type = section_name.lstrip("#")
-            extracted.extend(
-                self._extract_content_items(
-                    content_blocks, section_type, journal_date, parser
-                )
+            items = self._extract_content_items(
+                content_blocks, section_type, journal_date, parser
             )
+            if section_name == "#learnings":
+                self.stats.learnings += len(items)
+            elif section_name == "#achievements":
+                self.stats.achievements += len(items)
+            elif section_name == "#highlights":
+                self.stats.highlights += len(items)
+            extracted.extend(items)
 
         return extracted
 
@@ -382,6 +407,8 @@ class ObsidianConverter:
             if self.scanner:
                 file_path = self.scanner.get_file_for_block(uuid)
                 if file_path:
+                    # Increment stat only when we successfully resolve a block ref
+                    self.stats.block_refs += 1
                     filename = file_path.name
                     dest_name = self.transform_journal_filename(
                         filename

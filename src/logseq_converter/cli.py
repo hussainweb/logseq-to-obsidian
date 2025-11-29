@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from logseq_converter.logseq.parser import BlockReferenceScanner
-from logseq_converter.obsidian.converter import ObsidianConverter
+from logseq_converter.obsidian.converter import ConversionStats, ObsidianConverter
 from logseq_converter.utils import (
     copy_assets,
     is_markdown_empty,
@@ -53,7 +53,10 @@ def convert_vault(
             if file.endswith(".md"):
                 scanner.scan_file(Path(root) / file)
 
-    converter = ObsidianConverter(scanner)
+    # Initialize stats
+    stats = ConversionStats()
+
+    converter = ObsidianConverter(scanner, stats)
 
     # Create destination directory
     if not destination.exists() and not dry_run:
@@ -67,6 +70,9 @@ def convert_vault(
         if not dry_run:
             copy_assets(assets_src, assets_dest)
 
+        # Count assets
+        stats.assets = sum(1 for _ in assets_src.glob("*") if _.is_file())
+
     # Process files
     log_progress("Processing files...")
 
@@ -77,6 +83,18 @@ def convert_vault(
     _process_pages(pages_dir, destination, converter, verbose, dry_run)
 
     log_progress("Conversion complete.")
+
+    # Output statistics
+    print("\nConversion Statistics:")
+    print(f"  Journals: {stats.journals}")
+    print(f"  Pages: {stats.pages}")
+    print(f"  Assets: {stats.assets}")
+    print(f"  Block References: {stats.block_refs}")
+    print(f"  Links: {stats.links}")
+    print(f"  Learnings: {stats.learnings}")
+    print(f"  Achievements: {stats.achievements}")
+    print(f"  Highlights: {stats.highlights}")
+
     return 0
 
 
@@ -123,6 +141,7 @@ def _process_journals(
                     if not dry_run:
                         with open(dest_path, "w", encoding="utf-8") as f:
                             f.write(converted_content)
+                    converter.stats.journals += 1
                 elif verbose:
                     log_progress(
                         f"Skipping empty journal after extraction: {file_path.name}"
@@ -161,6 +180,7 @@ def _process_pages(
             if not dry_run:
                 with open(dest_path, "w", encoding="utf-8") as f:
                     f.write(converted_content)
+            converter.stats.pages += 1
         except Exception as e:
             log_warning(f"Error processing page {file_path.name}: {e}")
             continue
