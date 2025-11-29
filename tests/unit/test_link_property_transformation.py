@@ -13,8 +13,8 @@ alias:: alias1
 
 - Block 1
 """
+    # Note: title is filtered out as it's an excluded property
     expected = """---
-title: My Page
 tags: tag1, tag2
 alias: alias1
 ---

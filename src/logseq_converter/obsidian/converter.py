@@ -8,6 +8,15 @@ from logseq_converter.utils import generate_content_filename, sanitize_filename
 
 
 class ObsidianConverter:
+    # Properties to exclude from frontmatter conversion
+    EXCLUDED_PROPERTIES = {
+        "heading",
+        "collapsed",
+        "icon",
+        "title",
+        "exclude-from-graph-view",
+    }
+
     def __init__(self, scanner: Optional[BlockReferenceScanner] = None):
         self.scanner = scanner
 
@@ -39,16 +48,22 @@ class ObsidianConverter:
             # 0. Remove Logbook
             content = self.remove_logbook(content)
 
-            # 1. Properties to Frontmatter
+            # 1. Filter excluded properties from existing frontmatter (if present)
+            content = self._filter_frontmatter_properties(content)
+
+            # 2. Properties to Frontmatter (for key:: value format)
             content = self._transform_properties(content)
 
-            # 2. Block IDs
+            # 3. Remove excluded properties from content body
+            content = self._remove_excluded_properties_from_body(content)
+
+            # 4. Block IDs
             content = self._transform_block_ids(content)
 
-            # 3. Block Refs
+            # 5. Block Refs
             content = self._transform_block_refs(content)
 
-            # 4. Date Links
+            # 6. Date Links
             content = self._transform_date_links(content)
 
             return content
@@ -61,6 +76,90 @@ class ObsidianConverter:
     def remove_logbook(self, content: str) -> str:
         # Remove :LOGBOOK: ... :END:
         return re.sub(r":LOGBOOK:.*?:END:", "", content, flags=re.DOTALL)
+
+    def _filter_frontmatter_properties(self, content: str) -> str:
+        """
+        Filters excluded properties from existing YAML frontmatter.
+        LogSeq files can have frontmatter with properties that need to be removed.
+        """
+        lines = content.split("\n")
+
+        # Check if content starts with frontmatter
+        if not lines or lines[0].strip() != "---":
+            return content
+
+        # Find the end of frontmatter
+        frontmatter_end_idx = None
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                frontmatter_end_idx = i
+                break
+
+        if frontmatter_end_idx is None:
+            # Malformed frontmatter, return as-is
+            return content
+
+        # Process frontmatter lines
+        result_lines = [lines[0]]  # Keep opening ---
+
+        for i in range(1, frontmatter_end_idx):
+            line = lines[i]
+            # Match YAML key: value format
+            yaml_match = re.match(r"^\s*([a-zA-Z0-9_-]+):\s*(.*)$", line)
+            if yaml_match:
+                key = yaml_match.group(1)
+                if key in self.EXCLUDED_PROPERTIES:
+                    # Skip this property
+                    continue
+            result_lines.append(line)
+
+        result_lines.append(lines[frontmatter_end_idx])  # Keep closing ---
+
+        # Add the rest of the content
+        result_lines.extend(lines[frontmatter_end_idx + 1 :])
+
+        return "\n".join(result_lines)
+
+    def _remove_excluded_properties_from_body(self, content: str) -> str:
+        """
+        Removes excluded properties from content body (after frontmatter).
+        These are typically inline properties like heading::, collapsed::, etc.
+        """
+        lines = content.split("\n")
+        result_lines = []
+        in_frontmatter = False
+        frontmatter_end = False
+
+        for i, line in enumerate(lines):
+            # Track frontmatter boundaries
+            if i == 0 and line.strip() == "---":
+                in_frontmatter = True
+                result_lines.append(line)
+                continue
+            elif in_frontmatter and line.strip() == "---":
+                in_frontmatter = False
+                frontmatter_end = True
+                result_lines.append(line)
+                continue
+            elif in_frontmatter:
+                # Keep all frontmatter content as-is
+                result_lines.append(line)
+                continue
+
+            # After frontmatter, check for excluded properties
+            if frontmatter_end or i > 0:
+                # Match lines that are ONLY property definitions (key:: value)
+                # with optional leading whitespace
+                prop_match = re.match(r"^\s*([a-zA-Z0-9_-]+)::\s*(.+)$", line)
+                if prop_match:
+                    key = prop_match.group(1)
+                    if key in self.EXCLUDED_PROPERTIES:
+                        # Skip this line entirely
+                        continue
+
+            result_lines.append(line)
+
+        return "\n".join(result_lines)
 
     def extract_sections(
         self, content: str, original_filename: str
@@ -198,7 +297,9 @@ class ObsidianConverter:
             match = prop_regex.match(line)
             if match:
                 key, value = match.groups()
-                extracted_props[key] = value
+                # Only include properties that are not in the exclusion list
+                if key not in self.EXCLUDED_PROPERTIES:
+                    extracted_props[key] = value
                 idx += 1
             elif line.strip() == "":
                 idx += 1
