@@ -60,9 +60,7 @@ def sanitize_filename(filename: str) -> str:
     filename = re.sub(r"#\w+", "", filename)
 
     # Existing basic sanitization, now allowing periods
-    return "".join(
-        c for c in filename if c.isalnum() or c in (" ", ".", "_", "-")
-    ).strip()
+    return "".join(c for c in filename if c.isalnum() or c in (" ", ".", "_", "-")).strip()
 
 
 def generate_content_filename(description: str, max_words: int = 10) -> str:
@@ -192,10 +190,5 @@ def is_markdown_empty(content: str) -> bool:
     body_content = "\n".join(lines[start_idx:])
 
     # Remove characters we want to ignore
-    cleaned = (
-        body_content.replace("-", "")
-        .replace("\n", "")
-        .replace(" ", "")
-        .replace("\t", "")
-    )
+    cleaned = body_content.replace("-", "").replace("\n", "").replace(" ", "").replace("\t", "")
     return len(cleaned) == 0

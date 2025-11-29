@@ -51,9 +51,7 @@ class LogSeqParser:
         journal_date = parse_journal_date(filename)
 
         if journal_date:
-            return Journal(
-                filename=filename, date=journal_date, content=content, blocks=blocks
-            )
+            return Journal(filename=filename, date=journal_date, content=content, blocks=blocks)
         else:
             return Page(filename=filename, content=content, blocks=blocks)
 
@@ -86,26 +84,20 @@ class LogSeqParser:
 
         return content_items
 
-    def _parse_content_item(
-        self, block: Block, item_type: str
-    ) -> Optional[ContentItem]:
+    def _parse_content_item(self, block: Block, item_type: str) -> Optional[ContentItem]:
         description = block.content.strip()
         sub_items = self._flatten_block_content_with_indent(block.children, depth=0)
 
         return ContentItem(type=item_type, description=description, sub_items=sub_items)
 
-    def _flatten_block_content_with_indent(
-        self, blocks: List[Block], depth: int = 0
-    ) -> List[str]:
+    def _flatten_block_content_with_indent(self, blocks: List[Block], depth: int = 0) -> List[str]:
         """Recursively flatten block hierarchy with indentation preserved."""
         result = []
         indent = "  " * depth  # 2 spaces per level
         for block in blocks:
             result.append(f"{indent}- {block.content.strip()}")
             if block.children:
-                result.extend(
-                    self._flatten_block_content_with_indent(block.children, depth + 1)
-                )
+                result.extend(self._flatten_block_content_with_indent(block.children, depth + 1))
         return result
 
     def _parse_link_item(self, block: Block) -> Optional[LinkItem]:
@@ -126,9 +118,7 @@ class LogSeqParser:
             # Add child content and recursively add nested children
             sub_items.append(f"- {child.content.strip()}")
             if child.children:
-                sub_items.extend(
-                    self._flatten_block_content_with_indent(child.children, depth=1)
-                )
+                sub_items.extend(self._flatten_block_content_with_indent(child.children, depth=1))
 
         return LinkItem(
             caption=caption,

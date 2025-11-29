@@ -14,9 +14,7 @@ from logseq_converter.utils import (
 )
 
 
-def convert_vault(
-    source: Path, destination: Path, verbose: bool, dry_run: bool = False
-) -> int:
+def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool = False) -> int:
     if not source.exists():
         log_warning(f"Source directory '{source}' does not exist.")
         return 1
@@ -122,9 +120,7 @@ def _process_journals(
                     content = f.read()
 
                 # Extract sections (US3)
-                content, extracted_files = converter.extract_sections(
-                    content, file_path.name
-                )
+                content, extracted_files = converter.extract_sections(content, file_path.name)
 
                 # Save extracted files (empty files already filtered by converter)
                 for filename, file_content in extracted_files:
@@ -143,9 +139,7 @@ def _process_journals(
                             f.write(converted_content)
                     converter.stats.journals += 1
                 elif verbose:
-                    log_progress(
-                        f"Skipping empty journal after extraction: {file_path.name}"
-                    )
+                    log_progress(f"Skipping empty journal after extraction: {file_path.name}")
             else:
                 log_warning(f"Skipping unrecognized journal file: {file_path.name}")
         except Exception as e:
@@ -187,9 +181,7 @@ def _process_pages(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Convert LogSeq graph to Obsidian vault"
-    )
+    parser = argparse.ArgumentParser(description="Convert LogSeq graph to Obsidian vault")
     parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
     parser.add_argument(
         "destination",

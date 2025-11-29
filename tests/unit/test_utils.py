@@ -42,9 +42,7 @@ def test_generate_content_filename_filters_filler_words():
 
 def test_generate_content_filename_limits_to_10_words():
     """Test that only first 10 meaningful words are used"""
-    description = (
-        "Word1 Word2 Word3 Word4 Word5 Word6 Word7 Word8 Word9 Word10 Word11 Word12"
-    )
+    description = "Word1 Word2 Word3 Word4 Word5 Word6 Word7 Word8 Word9 Word10 Word11 Word12"
     result = generate_content_filename(description)
     assert result == "Word1 Word2 Word3 Word4 Word5 Word6 Word7 Word8 Word9 Word10"
 

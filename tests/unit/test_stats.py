@@ -1,7 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
-from logseq_converter.obsidian.converter import ObsidianConverter, ConversionStats
-from logseq_converter.logseq.models import LinkItem, ContentItem
+
+from logseq_converter.obsidian.converter import ConversionStats, ObsidianConverter
 
 
 def test_stats_initialization():

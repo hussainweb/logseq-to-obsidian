@@ -29,9 +29,7 @@ def test_convert_content_item_achievement():
     scanner = BlockReferenceScanner()
     converter = ObsidianConverter(scanner)
 
-    item = ContentItem(
-        type="achievements", description="Completed the project", sub_items=[]
-    )
+    item = ContentItem(type="achievements", description="Completed the project", sub_items=[])
     journal_date = date(2023, 11, 28)
 
     filename, content = converter.convert_content_item(item, journal_date)

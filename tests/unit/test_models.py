@@ -12,9 +12,7 @@ def test_block_creation():
 
 
 def test_journal_creation():
-    journal = Journal(
-        filename="2023_01_01.md", date=date(2023, 1, 1), content="some content"
-    )
+    journal = Journal(filename="2023_01_01.md", date=date(2023, 1, 1), content="some content")
     assert journal.filename == "2023_01_01.md"
     assert journal.date == date(2023, 1, 1)
     assert journal.content == "some content"

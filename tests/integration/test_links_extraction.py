@@ -26,7 +26,7 @@ def source_vault_links(tmp_path):
 	- Fun project that captures how many times Claude says, "You're absolutely right."
       - I can host it myself from the GitHub repository.
 	- Works by watching Claude's projects directory, so it only works with Claude code.
-	- The front-end visualization is quite interesting; it uses a charting library called [roughViz](https://www.jwilber.me/roughviz/) that produces charts that look hand-drawn. #javascript
+	- The front-end visualization is quite interesting;
 """
     with open(vault / "journals" / "2025_11_28.md", "w") as f:
         f.write(content)
@@ -58,10 +58,7 @@ def test_links_extraction(source_vault_links, dest_vault_links):
         assert "GitHub" not in content
         # Should contain other entries
         assert "- Journal entry" in content
-        assert (
-            '- Fun project that captures how many times Claude says, "You\'re absolutely right."'
-            not in content
-        )
+        assert '- Fun project that captures how many times Claude says, "You\'re absolutely right."' not in content
 
     # Verify extracted files
     links_dir = dest_vault_links / "Links"
@@ -82,10 +79,7 @@ def test_links_extraction(source_vault_links, dest_vault_links):
         assert "url: https://absolutelyright.lol/" in c
         assert "github_url: https://github.com/yoavf/absolutelyright" in c
         assert "# I'm Absolutely Right" in c
-        assert (
-            '- Fun project that captures how many times Claude says, "You\'re absolutely right."'
-            in c
-        )
+        assert '- Fun project that captures how many times Claude says, "You\'re absolutely right."' in c
         assert "  - I can host it myself from the GitHub repository." in c
 
     github_file = links_dir / "GitHub Site.md"

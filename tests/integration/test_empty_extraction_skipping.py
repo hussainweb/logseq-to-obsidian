@@ -35,9 +35,7 @@ def dest_vault_empty(tmp_path):
     return tmp_path / "dest_vault_empty"
 
 
-def test_empty_journal_after_extraction_not_written(
-    source_vault_empty, dest_vault_empty
-):
+def test_empty_journal_after_extraction_not_written(source_vault_empty, dest_vault_empty):
     """Test that journal files are not written when empty after extraction."""
     # Mock sys.argv
     test_args = [
@@ -51,9 +49,7 @@ def test_empty_journal_after_extraction_not_written(
 
     # Verify journal file was NOT created (empty after extraction)
     dest_journal = dest_vault_empty / "Daily" / "2025-11-29.md"
-    assert not dest_journal.exists(), (
-        "Journal file should not exist when empty after extraction"
-    )
+    assert not dest_journal.exists(), "Journal file should not exist when empty after extraction"
 
     # Verify that Learnings directory was created with extracted files
     learnings_dir = dest_vault_empty / "Learnings"

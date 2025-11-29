@@ -4,13 +4,7 @@ from logseq_converter.logseq.parser import LogSeqParser
 
 def test_parse_journal(tmp_path):
     f = tmp_path / "2023_11_28.md"
-    content = (
-        "- Block 1\n"
-        "  id:: 550e8400-e29b-41d4-a716-446655440000\n"
-        "  prop:: val\n"
-        "- Block 2\n"
-        "  - Child 1"
-    )
+    content = "- Block 1\n  id:: 550e8400-e29b-41d4-a716-446655440000\n  prop:: val\n- Block 2\n  - Child 1"
     f.write_text(content)
 
     parser = LogSeqParser()

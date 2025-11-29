@@ -60,9 +60,7 @@ def test_heading_without_list_conversion(source_vault_heading, dest_vault_headin
 
     # Verify journal file is NOT created (empty after extraction)
     dest_journal = dest_vault_heading / "Daily" / "2025-11-29.md"
-    assert not dest_journal.exists(), (
-        "Journal file should not exist when empty after extraction"
-    )
+    assert not dest_journal.exists(), "Journal file should not exist when empty after extraction"
 
     # Verify extracted learnings files
     learnings_dir = dest_vault_heading / "Learnings"

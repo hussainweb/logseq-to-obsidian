@@ -13,9 +13,7 @@ def test_extract_sections():
 """
     original_filename = "2025_11_27.md"
 
-    modified_content, extracted_files = converter.extract_sections(
-        content, original_filename
-    )
+    modified_content, extracted_files = converter.extract_sections(content, original_filename)
 
     # Verify modified content (sections removed)
     assert "- Journal Entry 1" in modified_content
@@ -70,9 +68,7 @@ def test_extract_sections_with_heading_markers():
 """
     original_filename = "2025_11_27.md"
 
-    modified_content, extracted_files = converter.extract_sections(
-        content, original_filename
-    )
+    modified_content, extracted_files = converter.extract_sections(content, original_filename)
 
     # Verify modified content (sections removed)
     assert "- Journal Entry 1" in modified_content

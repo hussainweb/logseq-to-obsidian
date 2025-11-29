@@ -1,11 +1,10 @@
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional, Tuple
 
-from dataclasses import dataclass, field
-
 from logseq_converter.logseq.models import ContentItem, LinkItem
-from logseq_converter.logseq.parser import BlockReferenceScanner
+from logseq_converter.logseq.parser import BlockReferenceScanner, LogSeqParser
 from logseq_converter.utils import generate_content_filename, sanitize_filename
 
 
@@ -180,9 +179,7 @@ class ObsidianConverter:
 
         return "\n".join(result_lines)
 
-    def extract_sections(
-        self, content: str, original_filename: str
-    ) -> tuple[str, list[tuple[str, str]]]:
+    def extract_sections(self, content: str, original_filename: str) -> tuple[str, list[tuple[str, str]]]:
         """
         Extracts specific sections from journal entries.
         Returns (modified_content, list_of_extracted_files).
@@ -207,15 +204,11 @@ class ObsidianConverter:
                 initial_indent = len(line) - len(line.lstrip())
 
                 # Capture section lines
-                section_lines, next_idx = self._capture_section_lines(
-                    lines, i, initial_indent
-                )
+                section_lines, next_idx = self._capture_section_lines(lines, i, initial_indent)
                 i = next_idx
 
                 # Process the captured section
-                new_extracted = self._process_section_content(
-                    section_lines, section_name, journal_date, parser
-                )
+                new_extracted = self._process_section_content(section_lines, section_name, journal_date, parser)
                 extracted_files.extend(new_extracted)
                 continue
 
@@ -232,9 +225,7 @@ class ObsidianConverter:
             re.IGNORECASE,
         )
 
-    def _capture_section_lines(
-        self, lines: list[str], start_idx: int, initial_indent: int
-    ) -> tuple[list[str], int]:
+    def _capture_section_lines(self, lines: list[str], start_idx: int, initial_indent: int) -> tuple[list[str], int]:
         """
         Captures lines belonging to a section starting at start_idx.
         Returns (captured_lines, next_line_index).
@@ -256,9 +247,7 @@ class ObsidianConverter:
             # Check for heading boundaries
             # If we started with a heading (initial_indent == 0 and starts with #),
             # we stop at the next heading.
-            is_root_heading = initial_indent == 0 and re.match(
-                r"^#{1,6}\s+", lines[start_idx]
-            )
+            is_root_heading = initial_indent == 0 and re.match(r"^#{1,6}\s+", lines[start_idx])
             if is_root_heading:
                 if re.match(r"^#{1,6}\s+", line):
                     break
@@ -268,9 +257,7 @@ class ObsidianConverter:
 
             # Check for list item boundaries
             # Stop if we find a new list item at same or lower indentation level
-            is_new_block = (
-                re.match(r"^(-|\*)\s+", line) and current_indent <= initial_indent
-            )
+            is_new_block = re.match(r"^(-|\*)\s+", line) and current_indent <= initial_indent
 
             if is_new_block:
                 break
@@ -312,9 +299,7 @@ class ObsidianConverter:
             extracted.extend(items)
         elif section_name in {"#learnings", "#achievements", "#highlights"}:
             section_type = section_name.lstrip("#")
-            items = self._extract_content_items(
-                content_blocks, section_type, journal_date, parser
-            )
+            items = self._extract_content_items(content_blocks, section_type, journal_date, parser)
             if section_name == "#learnings":
                 self.stats.learnings += len(items)
             elif section_name == "#achievements":
@@ -325,9 +310,7 @@ class ObsidianConverter:
 
         return extracted
 
-    def _extract_link_items(
-        self, blocks: list, journal_date: date, parser: "LogSeqParser"
-    ) -> list[tuple[str, str]]:
+    def _extract_link_items(self, blocks: list, journal_date: date, parser: "LogSeqParser") -> list[tuple[str, str]]:
         results = []
         from logseq_converter.utils import is_markdown_empty
 
@@ -353,9 +336,7 @@ class ObsidianConverter:
         for child in blocks:
             content_item = parser._parse_content_item(child, section_type)
             if content_item:
-                filename, file_content = self.convert_content_item(
-                    content_item, journal_date
-                )
+                filename, file_content = self.convert_content_item(content_item, journal_date)
                 if not is_markdown_empty(file_content):
                     dir_name = section_type.capitalize()
                     full_filename = f"{dir_name}/{filename}"
@@ -410,9 +391,7 @@ class ObsidianConverter:
                     # Increment stat only when we successfully resolve a block ref
                     self.stats.block_refs += 1
                     filename = file_path.name
-                    dest_name = self.transform_journal_filename(
-                        filename
-                    ) or self.transform_page_filename(filename)
+                    dest_name = self.transform_journal_filename(filename) or self.transform_page_filename(filename)
                     link_path = dest_name.replace(".md", "")
                     return f"[[{link_path}#^{uuid}]]"
 
@@ -466,16 +445,12 @@ class ObsidianConverter:
 
         return filename, "\n".join(content_lines)
 
-    def convert_content_item(
-        self, item: ContentItem, journal_date: date
-    ) -> Tuple[str, str]:
+    def convert_content_item(self, item: ContentItem, journal_date: date) -> Tuple[str, str]:
         """
         Converts a ContentItem to an Obsidian markdown file content.
         Returns (filename, content).
         """
-        filename = (
-            f"{sanitize_filename(generate_content_filename(item.description))}.md"
-        )
+        filename = f"{sanitize_filename(generate_content_filename(item.description))}.md"
 
         frontmatter = [
             "---",
