@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from mistletoe import Document
+from mistletoe.block_token import BlockToken, ListItem, Paragraph
 from mistletoe.block_token import List as MistletoeList
-from mistletoe.block_token import ListItem, Paragraph
 from mistletoe.markdown_renderer import MarkdownRenderer
 from mistletoe.span_token import LineBreak, Link, RawText
 
@@ -180,12 +180,31 @@ class LogSeqParser:
 
         return None
 
+    def _extract_frontmatter(self, content: str) -> tuple[str, str]:
+        """Extract frontmatter from content. Returns (frontmatter, body)."""
+        lines = content.split("\n")
+        if not lines or lines[0].strip() != "---":
+            return "", content
+
+        # Find the closing ---
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                frontmatter = "\n".join(lines[: i + 1])
+                body = "\n".join(lines[i + 1 :])
+                return frontmatter, body
+
+        # No closing ---, treat as regular content
+        return "", content
+
     def _parse_blocks(self, content: str) -> List[Block]:
         """Parse LogSeq blocks using mistletoe for markdown list structure."""
-        doc = Document(content)
+        # Extract and skip frontmatter for parsing
+        frontmatter, body = self._extract_frontmatter(content)
+
+        doc = Document(body)
         root_blocks: List[Block] = []
 
-        # Find the root list in the document
+        # Process all children
         for child in doc.children:
             if isinstance(child, MistletoeList):
                 # Process each top-level list item as a root block
@@ -193,6 +212,13 @@ class LogSeqParser:
                     block = self._parse_list_item(list_item)
                     if block:
                         root_blocks.append(block)
+            elif isinstance(child, BlockToken):
+                # Handle any other block-level content (Heading, Paragraph, etc.)
+                content_text = self._extract_markdown_from_block_token(child)
+                if content_text.strip():
+                    block = Block(content=content_text)
+                    self._parse_properties(content_text, block)
+                    root_blocks.append(block)
 
         return root_blocks
 
@@ -243,6 +269,15 @@ class LogSeqParser:
             return "".join(self._extract_text_from_token(child) for child in children)
 
         return ""
+
+    def _extract_markdown_from_block_token(self, block_token: BlockToken) -> str:
+        """Extract markdown content from any block token."""
+        with MarkdownRenderer() as renderer:
+            rendered = renderer.render(block_token)
+            # Remove trailing newline added by renderer
+            if rendered and rendered.endswith("\n"):
+                rendered = rendered[:-1]
+            return rendered
 
     def _extract_markdown_from_paragraph(self, paragraph: Paragraph) -> str:
         """Extract markdown content from a Paragraph token."""

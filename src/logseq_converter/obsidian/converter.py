@@ -189,9 +189,11 @@ class ObsidianConverter:
         while i < len(lines):
             line = lines[i]
             # Match #links (case insensitive)
-            # Support both "- #links" and "- ## #links" formats
+            # Support formats:
+            # - "- #links" or "- ## #links" (with list marker)
+            # - "## #links" (heading without list marker)
             match = re.match(
-                r"^-\s+(#{1,6}\s+)?(#links|#learnings|#achievements|#highlights)\s*$",
+                r"^(?:-\s+)?(#{1,6}\s+)?(#links|#learnings|#achievements|#highlights)\s*$",
                 line,
                 re.IGNORECASE,
             )
@@ -216,6 +218,17 @@ class ObsidianConverter:
 
                     current_indent = len(child_line) - len(child_line.lstrip())
 
+                    # For headings without list markers, capture all following list items
+                    # until we hit another heading or end of content
+                    if initial_indent == 0 and re.match(r"^#{1,6}\s+", line):
+                        # Heading at root level - capture all list items that follow
+                        if re.match(r"^#{1,6}\s+", child_line):
+                            # Hit another heading, stop
+                            break
+                        section_lines.append(child_line)
+                        i += 1
+                        continue
+
                     # A new top-level block is identified if:
                     # 1. It starts with a list item marker ('-' or '*')
                     # 2. Its indentation is less than or equal to the initial
@@ -238,12 +251,19 @@ class ObsidianConverter:
                 blocks = parser._parse_blocks(block_text)
 
                 if blocks:
-                    root_block = blocks[0]
+                    # If first block is a markdown heading (## #tag), content follows
+                    # Otherwise, first block contains the section and its children
+                    if re.match(r"^#{1,6}\s+", blocks[0].content):
+                        # Heading block - actual content is in subsequent blocks
+                        content_blocks = blocks[1:]
+                    else:
+                        # List item block - content is in its children
+                        content_blocks = blocks[0].children
 
                     if section_name == "#links":
                         # Extract link items from this block
                         if journal_date:
-                            for child in root_block.children:
+                            for child in content_blocks:
                                 link_item = parser._parse_link_item(child)
                                 if link_item:
                                     filename, file_content = self.convert_link_item(
@@ -262,7 +282,7 @@ class ObsidianConverter:
                         # Handle content sections
                         if journal_date:
                             section_type = section_name.lstrip("#")
-                            for child in root_block.children:
+                            for child in content_blocks:
                                 content_item = parser._parse_content_item(
                                     child, section_type
                                 )
