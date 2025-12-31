@@ -40,6 +40,7 @@ def test_empty_journal_after_extraction_not_written(source_vault_empty, dest_vau
     # Mock sys.argv
     test_args = [
         "logseq-converter",
+        "obsidian",
         str(source_vault_empty),
         str(dest_vault_empty),
     ]

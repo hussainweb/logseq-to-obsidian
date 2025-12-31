@@ -6,13 +6,37 @@ from pathlib import Path
 from typing import Optional
 
 
-def validate_output_directory(path: Path) -> None:
+def validate_output_directory(path: Path, force: bool = False) -> None:
     """
     Validates that the output directory is empty if it exists.
-    Raises FileExistsError if not empty.
+    Raises FileExistsError if not empty and force is False.
     """
+    if force:
+        return
+
     if path.exists() and any(path.iterdir()):
         raise FileExistsError(f"Output directory '{path}' is not empty.")
+
+
+def validate_logseq_source(path: Path) -> None:
+    """
+    Validates that the source directory appears to be a valid LogSeq graph.
+    Checks for existence of 'pages' or 'journals' subdirectories.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"Source directory '{path}' does not exist.")
+
+    if not path.is_dir():
+        raise NotADirectoryError(f"Source path '{path}' is not a directory.")
+
+    pages_dir = path / "pages"
+    journals_dir = path / "journals"
+
+    if not pages_dir.exists() and not journals_dir.exists():
+        raise ValueError(
+            f"Source directory '{path}' does not appear to be a "
+            "valid LogSeq graph. Missing 'pages' or 'journals' directories."
+        )
 
 
 def copy_assets(source_assets: Path, dest_assets: Path) -> None:
