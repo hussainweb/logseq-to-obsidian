@@ -37,7 +37,7 @@ def dest_vault(tmp_path):
 
 def test_full_vault_conversion(source_vault, dest_vault):
     # Mock sys.argv
-    test_args = ["logseq-converter", str(source_vault), str(dest_vault)]
+    test_args = ["logseq-converter", "obsidian", str(source_vault), str(dest_vault)]
     with patch.object(sys, "argv", test_args):
         ret = main()
         assert ret == 0

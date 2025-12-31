@@ -41,7 +41,7 @@ def dest_vault_links(tmp_path):
 
 def test_links_extraction(source_vault_links, dest_vault_links):
     # Mock sys.argv
-    test_args = ["logseq-converter", str(source_vault_links), str(dest_vault_links)]
+    test_args = ["logseq-converter", "obsidian", str(source_vault_links), str(dest_vault_links)]
     with patch.object(sys, "argv", test_args):
         ret = main()
         assert ret == 0

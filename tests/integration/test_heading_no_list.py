@@ -51,6 +51,7 @@ def test_heading_without_list_conversion(source_vault_heading, dest_vault_headin
     # Mock sys.argv
     test_args = [
         "logseq-converter",
+        "obsidian",
         str(source_vault_heading),
         str(dest_vault_heading),
     ]

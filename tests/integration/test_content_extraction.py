@@ -46,7 +46,7 @@ def dest_vault_content(tmp_path):
 
 def test_content_extraction(source_vault_content, dest_vault_content):
     # Mock sys.argv
-    test_args = ["logseq-converter", str(source_vault_content), str(dest_vault_content)]
+    test_args = ["logseq-converter", "obsidian", str(source_vault_content), str(dest_vault_content)]
     with patch.object(sys, "argv", test_args):
         ret = main()
         assert ret == 0

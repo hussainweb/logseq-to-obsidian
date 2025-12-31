@@ -23,6 +23,7 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.14+: Follow standard conventions
 
 ## Recent Changes
+- 004-export-logseq-tana: Added Python 3.14+ + uv, ruff, pytes
 - 003-refactor-module-logic: Added Python 3.14+ + uv, ruff, pytes
 
 - 003-refactor-module-logic: Added Python 3.14+ + uv, ruff, pytes
