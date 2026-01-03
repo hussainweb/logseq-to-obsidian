@@ -3,8 +3,10 @@ import dataclasses
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
+from logseq_converter.blinko import BlinkoClient, BlinkoConverter
 from logseq_converter.logseq.parser import BlockReferenceScanner, LogSeqParser
 from logseq_converter.obsidian.converter import ObsidianConverter
 from logseq_converter.stats import ConversionStats
@@ -256,6 +258,108 @@ def convert_to_tana(source: Path, destination: Path, verbose: bool, force: bool,
     return 0
 
 
+def convert_to_blinko(source: Path, endpoint: str, verbose: bool, dry_run: bool = False) -> int:
+    try:
+        validate_logseq_source(source)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as e:
+        log_warning(str(e))
+        return 1
+
+    token = os.environ.get("BLINKO_TOKEN")
+    if not token:
+        log_warning("BLINKO_TOKEN environment variable is not set.")
+        return 1
+
+    try:
+        client = BlinkoClient(endpoint, token)
+    except ValueError as e:
+        log_warning(f"Invalid configuration: {e}")
+        return 1
+
+    if dry_run:
+        log_progress("Dry run enabled. No changes will be sent to Blinko.")
+
+    log_progress(f"Converting '{source}' to Blinko at '{endpoint}'...")
+
+    parser = LogSeqParser()
+    converter = BlinkoConverter()
+
+    # Process pages
+    pages_dir = source / "pages"
+    if pages_dir.exists():
+        for file_path in pages_dir.glob("*.md"):
+            try:
+                if verbose:
+                    log_progress(f"Processing page: {file_path.name}")
+
+                page = parser.parse(file_path)
+                if not page:
+                    continue
+
+                content = converter.convert_page(page)
+
+                if not dry_run:
+                    client.upsert_note(content)
+                    time.sleep(0.1)  # rate limiting courtesy
+
+            except Exception as e:
+                log_warning(f"Error processing page {file_path.name}: {e}")
+
+    # Process journals
+    journals_dir = source / "journals"
+    if journals_dir.exists():
+        for file_path in journals_dir.glob("*.md"):
+            try:
+                if verbose:
+                    log_progress(f"Processing journal: {file_path.name}")
+
+                journal = parser.parse(file_path)
+                if not journal:
+                    continue
+
+                content = converter.convert_page(journal)
+
+                if not dry_run:
+                    client.upsert_note(content)
+                    time.sleep(0.1)
+
+            except Exception as e:
+                log_warning(f"Error processing journal {file_path.name}: {e}")
+
+    log_progress("Conversion complete.")
+    return 0
+
+
+def convert_blinko_delete_all(endpoint: str, verbose: bool, dry_run: bool = False) -> int:
+    token = os.environ.get("BLINKO_TOKEN")
+    if not token:
+        log_warning("BLINKO_TOKEN environment variable is not set.")
+        return 1
+
+    try:
+        client = BlinkoClient(endpoint, token)
+    except ValueError as e:
+        log_warning(f"Invalid configuration: {e}")
+        return 1
+
+    if dry_run:
+        log_progress("Dry run enabled. No changes will be sent to Blinko.")
+
+    log_progress(f"Deleting ALL notes from Blinko at '{endpoint}'...")
+
+    def progress_callback(deleted: int, total: int):
+        log_progress(f"Deleted {deleted}/{total} notes...")
+
+    total_deleted = client.delete_all(dry_run=dry_run, progress_callback=progress_callback)
+
+    if dry_run:
+        log_progress(f"Dry run complete. Would have deleted {total_deleted} notes.")
+    else:
+        log_progress(f"Successfully deleted {total_deleted} notes.")
+
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Convert LogSeq graph to other formats")
     subparsers = parser.add_subparsers(dest="command", help="Conversion target format")
@@ -275,12 +379,29 @@ def main() -> int:
     tana_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
     tana_parser.add_argument("-f", "--force", action="store_true", help="Force overwrite of destination file")
 
+    # Blinko command
+    blinko_parser = subparsers.add_parser("blinko", help="Export to Blinko")
+    blinko_parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
+    blinko_parser.add_argument("endpoint", type=str, help="Blinko API endpoint URL")
+    blinko_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    blinko_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without sending data")
+
+    # Blinko delete-all command
+    blinko_delete_all_parser = subparsers.add_parser("blinko:delete-all", help="Delete ALL notes from Blinko")
+    blinko_delete_all_parser.add_argument("endpoint", type=str, help="Blinko API endpoint URL")
+    blinko_delete_all_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    blinko_delete_all_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without deletion")
+
     args = parser.parse_args()
 
     if args.command == "tana":
         return convert_to_tana(args.source, args.destination, args.verbose, args.force, args.dry_run)
     elif args.command == "obsidian":
         return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
+    elif args.command == "blinko":
+        return convert_to_blinko(args.source, args.endpoint, args.verbose, args.dry_run)
+    elif args.command == "blinko:delete-all":
+        return convert_blinko_delete_all(args.endpoint, args.verbose, args.dry_run)
     else:
         # Default to obsidian if no subcommand provided (backward compatibility)
         # However, argparse might require subcommand if configured.
