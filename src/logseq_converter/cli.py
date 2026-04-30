@@ -420,9 +420,8 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
     # Process journals
     journals_dir = source / "journals"
     if journals_dir.exists():
-        # Tolaria is flat, but maybe we put journals in a Journals folder?
-        # Let's put journals in the root or a 'Journals' directory.
-        journals_dest = destination / "Journals"
+        # Tolaria expects journals in a 'journal' directory (lowercase, singular)
+        journals_dest = destination / "journal"
         if not dry_run and not journals_dest.exists():
             journals_dest.mkdir(parents=True, exist_ok=True)
             
