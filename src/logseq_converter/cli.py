@@ -360,6 +360,111 @@ def convert_blinko_delete_all(endpoint: str, verbose: bool, dry_run: bool = Fals
     return 0
 
 
+def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: bool = False) -> int:
+    try:
+        validate_logseq_source(source)
+    except (FileNotFoundError, NotADirectoryError, ValueError) as e:
+        log_warning(str(e))
+        return 1
+
+    try:
+        validate_output_directory(destination)
+    except FileExistsError as e:
+        log_warning(str(e))
+        return 1
+
+    if dry_run:
+        log_progress("Dry run enabled. No changes will be written.")
+
+    log_progress(f"Converting '{source}' to '{destination}' (Tolaria format)...")
+
+    # Create destination directory
+    if not destination.exists() and not dry_run:
+        destination.mkdir(parents=True)
+
+    import re
+
+    from logseq_converter.tolaria.converter import TolariaConverter
+    
+    converter = TolariaConverter()
+    
+    stats_pages = 0
+    stats_journals = 0
+
+    # Process pages
+    pages_dir = source / "pages"
+    if pages_dir.exists():
+        for file_path in pages_dir.glob("*.md"):
+            if converter.should_ignore(file_path.name):
+                if verbose:
+                    log_progress(f"Ignoring page: {file_path.name}")
+                continue
+                
+            try:
+                if verbose:
+                    log_progress(f"Processing page: {file_path.name}")
+                
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                final_name, final_content = converter.process_metadata(file_path.name, content)
+                dest_path = destination / final_name
+                
+                if not dry_run:
+                    with open(dest_path, "w", encoding="utf-8") as f:
+                        f.write(final_content)
+                stats_pages += 1
+            except Exception as e:
+                log_warning(f"Error processing page {file_path.name}: {e}")
+
+    # Process journals
+    journals_dir = source / "journals"
+    if journals_dir.exists():
+        # Tolaria is flat, but maybe we put journals in a Journals folder?
+        # Let's put journals in the root or a 'Journals' directory.
+        journals_dest = destination / "Journals"
+        if not dry_run and not journals_dest.exists():
+            journals_dest.mkdir(parents=True, exist_ok=True)
+            
+        for file_path in journals_dir.glob("*.md"):
+            try:
+                if verbose:
+                    log_progress(f"Processing journal: {file_path.name}")
+
+                dest_name = converter.transform_journal_filename(file_path.name)
+                
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    
+                remaining_content, properties = converter.extract_and_remove_frontmatter(content)
+                properties["type"] = "journal"
+                
+                frontmatter = []
+                frontmatter.append("---")
+                for k, v in properties.items():
+                    frontmatter.append(f"{k}: {v}")
+                frontmatter.append("---")
+                
+                final_content = "\n".join(frontmatter) + "\n\n" + remaining_content.strip()
+                final_content = re.sub(r"id::\s*([a-fA-F0-9-]{36})\n?", "", final_content)
+
+                dest_path = journals_dest / dest_name
+                if not dry_run:
+                    with open(dest_path, "w", encoding="utf-8") as f:
+                        f.write(final_content)
+                stats_journals += 1
+
+            except Exception as e:
+                log_warning(f"Error processing journal {file_path.name}: {e}")
+
+    log_progress("Conversion complete.")
+    print("\nConversion Statistics:")
+    print(f"  Journals: {stats_journals}")
+    print(f"  Pages: {stats_pages}")
+    
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Convert LogSeq graph to other formats")
     subparsers = parser.add_subparsers(dest="command", help="Conversion target format")
@@ -379,6 +484,13 @@ def main() -> int:
     tana_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
     tana_parser.add_argument("-f", "--force", action="store_true", help="Force overwrite of destination file")
 
+    # Tolaria command
+    tolaria_parser = subparsers.add_parser("tolaria", help="Convert to Tolaria Markdown Format")
+    tolaria_parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
+    tolaria_parser.add_argument("destination", type=Path, help="Destination Tolaria vault directory")
+    tolaria_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    tolaria_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
+
     # Blinko command
     blinko_parser = subparsers.add_parser("blinko", help="Export to Blinko")
     blinko_parser.add_argument("source", type=Path, help="Source LogSeq graph directory")
@@ -394,7 +506,9 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    if args.command == "tana":
+    if args.command == "tolaria":
+        return convert_to_tolaria(args.source, args.destination, args.verbose, args.dry_run)
+    elif args.command == "tana":
         return convert_to_tana(args.source, args.destination, args.verbose, args.force, args.dry_run)
     elif args.command == "obsidian":
         return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
