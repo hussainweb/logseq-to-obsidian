@@ -389,15 +389,24 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
 
     log_progress(f"Converting '{source}' to '{destination}' (Tolaria format)...")
 
+    # Pass 1: Scan for block IDs
+    log_progress("Scanning for block IDs...")
+    scanner = BlockReferenceScanner()
+
+    # Walk source to scan
+    for root, _, files in os.walk(source):
+        for file in files:
+            if file.endswith(".md"):
+                scanner.scan_file(Path(root) / file)
+
     # Create destination directory
     if not destination.exists() and not dry_run:
         destination.mkdir(parents=True)
 
-    import re
 
     from logseq_converter.tolaria.converter import TolariaConverter
     
-    converter = TolariaConverter()
+    converter = TolariaConverter(scanner=scanner)
     
     stats_pages = 0
     stats_journals = 0
@@ -452,21 +461,38 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
                     
                 remaining_content, properties = converter.extract_and_remove_frontmatter(content)
                 properties["type"] = "journal"
-                
-                frontmatter = []
-                frontmatter.append("---")
-                for k, v in properties.items():
-                    frontmatter.append(f"{k}: {v}")
-                frontmatter.append("---")
-                
-                final_content = "\n".join(frontmatter) + "\n\n" + remaining_content.strip()
-                final_content = re.sub(r"id::\s*([a-fA-F0-9-]{36})\n?", "", final_content)
 
-                dest_path = journals_dest / dest_name
-                if not dry_run:
-                    with open(dest_path, "w", encoding="utf-8") as f:
-                        f.write(final_content)
-                stats_journals += 1
+                # Extract sections (learnings, achievements, highlights, links)
+                remaining_content, extracted_files = converter.extract_sections(remaining_content, file_path.name)
+
+                # Save extracted files directly in the root destination directory
+                for filename, file_content in extracted_files:
+                    extracted_path = destination / filename
+                    if not dry_run:
+                        with open(extracted_path, "w", encoding="utf-8") as f:
+                            f.write(file_content)
+                    stats_pages += 1
+
+                # Skip writing journal file if it's empty after extraction
+                if not is_markdown_empty(remaining_content):
+                    transformed_body = converter.convert_content(remaining_content)
+                    
+                    frontmatter = []
+                    frontmatter.append("---")
+                    for k, v in properties.items():
+                        frontmatter.append(f"{k}: {v}")
+                    frontmatter.append("---")
+                    
+                    final_content = "\n".join(frontmatter) + "\n\n" + transformed_body.strip()
+                    final_content = trim_empty_bullets(final_content)
+
+                    dest_path = journals_dest / dest_name
+                    if not dry_run:
+                        with open(dest_path, "w", encoding="utf-8") as f:
+                            f.write(final_content)
+                    stats_journals += 1
+                elif verbose:
+                    log_progress(f"Skipping empty journal after extraction: {file_path.name}")
 
             except Exception as e:
                 log_warning(f"Error processing journal {file_path.name}: {e}")
@@ -475,6 +501,11 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
     print("\nConversion Statistics:")
     print(f"  Journals: {stats_journals}")
     print(f"  Pages: {stats_pages}")
+    print(f"  Block References: {converter.stats_block_refs}")
+    print(f"  Links: {converter.stats_links}")
+    print(f"  Learnings: {converter.stats_learnings}")
+    print(f"  Achievements: {converter.stats_achievements}")
+    print(f"  Highlights: {converter.stats_highlights}")
     
     return 0
 
