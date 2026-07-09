@@ -373,25 +373,31 @@ def convert_blinko_delete_all(endpoint: str, verbose: bool, dry_run: bool = Fals
 
 def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
     """
-    Creates type documents in the destination Tolaria vault's `type/` folder.
+    Creates type documents in the destination Tolaria vault's root folder.
     This formally registers entity types (like journal, learning, etc.) in the UI.
     """
     if dry_run:
         return
 
-    type_dir = destination / "type"
-    type_dir.mkdir(parents=True, exist_ok=True)
+    # Delete legacy type/ directory if it exists
+    legacy_type_dir = destination / "type"
+    if legacy_type_dir.exists():
+        import shutil
+        try:
+            shutil.rmtree(legacy_type_dir)
+        except Exception as e:
+            log_warning(f"Failed to remove legacy type directory: {e}")
 
     types_config = {
         "journal": {
             "icon": "📓",
             "_color": "#4f46e5",
-            "content": "# Plan for the day\n\n- \n\n# Log\n\n- \n"
+            "content": "## Plan for the day\n\n- \n\n## Log\n\n- \n"
         },
         "learning": {
             "icon": "💡",
             "_color": "#eab308",
-            "content": "# Summary\n\n- \n\n# Details\n\n- \n"
+            "content": "## Summary\n\n- \n\n## Details\n\n- \n"
         },
         "link": {
             "icon": "🔗",
@@ -411,7 +417,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
         "project": {
             "icon": "📁",
             "_color": "#ec4899",
-            "content": "# Overview\n\n- \n\n# Tasks\n\n- [ ] \n"
+            "content": "## Overview\n\n- \n\n## Tasks\n\n- [ ] \n"
         },
         "work": {
             "icon": "💼",
@@ -421,7 +427,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
         "meeting": {
             "icon": "👥",
             "_color": "#8b5cf6",
-            "content": "# Agenda\n\n- \n\n# Notes\n\n- \n\n# Action Items\n\n- [ ] \n"
+            "content": "## Agenda\n\n- \n\n## Notes\n\n- \n\n## Action Items\n\n- [ ] \n"
         },
         "device": {
             "icon": "💻",
@@ -466,7 +472,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
     }
 
     for type_name, config in types_config.items():
-        type_file = type_dir / f"{type_name}.md"
+        type_file = destination / f"type-{type_name}.md"
         # Only write if it does not exist, to avoid overwriting user edits
         if not type_file.exists():
             frontmatter = [
@@ -476,7 +482,8 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 f"_color: \"{config['_color']}\"",
                 "---"
             ]
-            file_content = "\n".join(frontmatter) + "\n\n" + config["content"]
+            first_header = f"# {type_name}"
+            file_content = "\n".join(frontmatter) + "\n\n" + first_header + "\n\n" + config["content"]
             try:
                 with open(type_file, "w", encoding="utf-8") as f:
                     f.write(file_content)
