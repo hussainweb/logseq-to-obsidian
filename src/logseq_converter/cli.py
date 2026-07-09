@@ -393,7 +393,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
             "label": "Journal",
             "icon": "📓",
             "_color": "#4f46e5",
-            "content": "# {{date}}\n\n## Plan for the day\n\n- \n\n## Log\n\n- \n"
+            "content": "# \n\n## Plan for the day\n\n- \n\n## Log\n\n- \n"
         },
         "learning": {
             "label": "Learning",
