@@ -1,45 +1,34 @@
-from logseq_converter.llm import LLMFilenameGenerator
+from logseq_converter.llm import LLMFilenameGenerator, OllamaLLMClient, OpenRouterLLMClient
 
 
-def test_provider_resolution(monkeypatch):
-    # Test fallback with no env vars
-    monkeypatch.delenv("LSC_LLM", raising=False)
-    monkeypatch.delenv("LSC_API_KEY", raising=False)
-    monkeypatch.delenv("OLLAMA_HOST", raising=False)
-
+def test_provider_resolution():
+    # Test fallback with no params
     generator = LLMFilenameGenerator()
     assert generator.provider == "none"
 
-    # Test auto-detection: LSC_API_KEY set
-    monkeypatch.setenv("LSC_API_KEY", "sk-or-12345")
-    generator = LLMFilenameGenerator()
+    # Test auto-detection: api_key set
+    generator = LLMFilenameGenerator(api_key="sk-or-12345")
     assert generator.provider == "openrouter"
-    assert generator.model == "google/gemini-2.5-flash-lite"
-    assert generator.base_url == "https://openrouter.ai/api/v1"
+    assert isinstance(generator.client, OpenRouterLLMClient)
+    assert generator.client.model == "google/gemini-2.5-flash-lite"
 
-    # Test auto-detection: OLLAMA_HOST set
-    monkeypatch.delenv("LSC_API_KEY", raising=False)
-    monkeypatch.setenv("OLLAMA_HOST", "http://192.168.1.10:11434")
-    generator = LLMFilenameGenerator()
+    # Test auto-detection: ollama_host set
+    generator = LLMFilenameGenerator(ollama_host="http://192.168.1.10:11434")
     assert generator.provider == "ollama"
-    assert generator.model == "qwen3:4b"
-    assert generator.base_url == "http://192.168.1.10:11434/v1"
+    assert isinstance(generator.client, OllamaLLMClient)
+    assert generator.client.model == "qwen3:4b"
 
-    # Test explicit override LSC_LLM
-    monkeypatch.setenv("LSC_LLM", "none")
-    generator = LLMFilenameGenerator()
+    # Test explicit override provider
+    generator = LLMFilenameGenerator(provider="none", api_key="sk-or-12345")
     assert generator.provider == "none"
 
-    # Test explicit model override LSC_MODEL
-    monkeypatch.setenv("LSC_LLM", "ollama")
-    monkeypatch.setenv("LSC_MODEL", "mistral")
-    generator = LLMFilenameGenerator()
+    # Test explicit model override
+    generator = LLMFilenameGenerator(provider="ollama", model="mistral")
     assert generator.provider == "ollama"
-    assert generator.model == "mistral"
+    assert generator.client.model == "mistral"
 
 
 def test_hashing_and_caching(tmp_path, monkeypatch):
-    monkeypatch.setenv("LSC_LLM", "none")
     # Redirect cache path to tmp folder for isolation
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
@@ -87,9 +76,11 @@ def test_post_process_filename():
 
 
 def test_resolve_placeholders(tmp_path, monkeypatch):
-    # Ensure LLM is set to none so it falls back to rule-based generation
-    monkeypatch.setenv("LSC_LLM", "none")
-    generator = LLMFilenameGenerator()
+    # Redirect cache path to tmp folder for isolation
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+
+    generator = LLMFilenameGenerator(provider="none")
 
     description = "Setting up FastAPI project"
     sub_items = ["- Add uvicorn", "- Write main.py"]

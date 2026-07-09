@@ -63,7 +63,14 @@ def convert_vault(
     # Initialize stats
     stats = ConversionStats()
 
-    converter = ObsidianConverter(scanner, stats)
+    converter = ObsidianConverter(
+        scanner,
+        stats,
+        llm_provider=os.environ.get("LSC_LLM"),
+        llm_api_key=os.environ.get("LSC_API_KEY"),
+        llm_model=os.environ.get("LSC_MODEL"),
+        ollama_host=os.environ.get("OLLAMA_HOST"),
+    )
     if clear_llm_cache:
         converter.llm_generator.clear_cache()
 
@@ -576,7 +583,13 @@ def convert_to_tolaria(
 
     from logseq_converter.tolaria.converter import TolariaConverter
     
-    converter = TolariaConverter(scanner=scanner)
+    converter = TolariaConverter(
+        scanner=scanner,
+        llm_provider=os.environ.get("LSC_LLM"),
+        llm_api_key=os.environ.get("LSC_API_KEY"),
+        llm_model=os.environ.get("LSC_MODEL"),
+        ollama_host=os.environ.get("OLLAMA_HOST"),
+    )
     if clear_llm_cache:
         converter.llm_generator.clear_cache()
     
