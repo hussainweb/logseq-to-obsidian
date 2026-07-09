@@ -33,6 +33,8 @@ class TolariaConverter:
         self.stats_learnings = 0
         self.stats_achievements = 0
         self.stats_highlights = 0
+        from logseq_converter.llm import LLMFilenameGenerator
+        self.llm_generator = LLMFilenameGenerator()
 
     def should_ignore(self, filename: str) -> bool:
         if filename in self.IGNORE_EXACT:
@@ -501,7 +503,16 @@ class TolariaConverter:
         """
         from logseq_converter.utils import generate_content_filename, sanitize_filename
 
-        filename = f"{sanitize_filename(generate_content_filename(item.description))}.md"
+        fallback_name = sanitize_filename(generate_content_filename(item.description))
+
+        if self.llm_generator and self.llm_generator.provider != "none":
+            checksum = self.llm_generator.get_content_hash(item.description, item.sub_items)
+            if checksum in self.llm_generator.cache:
+                filename = f"{self.llm_generator.cache[checksum]}.md"
+            else:
+                filename = f"__PENDING_LLM__{checksum}__{fallback_name}.md"
+        else:
+            filename = f"{fallback_name}.md"
 
         t_type = item.type
         if t_type.endswith("s"):

@@ -22,7 +22,7 @@ from logseq_converter.utils import (
 )
 
 
-def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool = False) -> int:
+def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool = False, clear_llm_cache: bool = False) -> int:
     try:
         validate_logseq_source(source)
     except (FileNotFoundError, NotADirectoryError, ValueError) as e:
@@ -58,6 +58,8 @@ def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool 
     stats = ConversionStats()
 
     converter = ObsidianConverter(scanner, stats)
+    if clear_llm_cache:
+        converter.llm_generator.clear_cache()
 
     # Create destination directory
     if not destination.exists() and not dry_run:
@@ -115,6 +117,8 @@ def _process_journals(
     if not journals_dir.exists():
         return
 
+    all_extracted_files = []
+
     for file_path in journals_dir.glob("*.md"):
         try:
             if verbose:
@@ -133,13 +137,8 @@ def _process_journals(
                 # Extract sections (US3)
                 content, extracted_files = converter.extract_sections(content, file_path.name)
 
-                # Save extracted files (empty files already filtered by converter)
-                for filename, file_content in extracted_files:
-                    extracted_path = destination / filename
-                    if not dry_run:
-                        extracted_path.parent.mkdir(parents=True, exist_ok=True)
-                        with open(extracted_path, "w", encoding="utf-8") as f:
-                            f.write(file_content)
+                # Collect extracted files for batch processing later
+                all_extracted_files.extend(extracted_files)
 
                 converted_content = converter.convert_content(content)
 
@@ -156,6 +155,21 @@ def _process_journals(
         except Exception as e:
             log_warning(f"Error processing journal {file_path.name}: {e}")
             continue
+
+    # Resolve all placeholder filenames in batch
+    resolved_files = converter.llm_generator.resolve_placeholders(all_extracted_files)
+
+    from logseq_converter.utils import handle_filename_collision
+
+    # Save resolved files
+    for filename, file_content in resolved_files:
+        extracted_path = destination / filename
+        extracted_path = handle_filename_collision(extracted_path)
+        if not dry_run:
+            extracted_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(extracted_path, "w", encoding="utf-8") as f:
+                f.write(file_content)
+
 
 
 def _process_pages(
@@ -515,7 +529,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 log_warning(f"Failed to write type note '{type_name}': {e}")
 
 
-def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: bool = False) -> int:
+def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: bool = False, clear_llm_cache: bool = False) -> int:
     try:
         validate_logseq_source(source)
     except (FileNotFoundError, NotADirectoryError, ValueError) as e:
@@ -551,6 +565,8 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
     from logseq_converter.tolaria.converter import TolariaConverter
     
     converter = TolariaConverter(scanner=scanner)
+    if clear_llm_cache:
+        converter.llm_generator.clear_cache()
     
     stats_pages = 0
     stats_journals = 0
@@ -590,43 +606,40 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
         journals_dest = destination / "journal"
         if not dry_run and not journals_dest.exists():
             journals_dest.mkdir(parents=True, exist_ok=True)
-            
+
+        all_extracted_files = []
+
         for file_path in journals_dir.glob("*.md"):
             try:
                 if verbose:
                     log_progress(f"Processing journal: {file_path.name}")
 
                 dest_name = converter.transform_journal_filename(file_path.name)
-                
+
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 content = trim_empty_bullets(content)
-                    
+
                 remaining_content, properties = converter.extract_and_remove_frontmatter(content)
                 properties["type"] = "Journal"
 
                 # Extract sections (learnings, achievements, highlights, links)
                 remaining_content, extracted_files = converter.extract_sections(remaining_content, file_path.name)
 
-                # Save extracted files directly in the root destination directory
-                for filename, file_content in extracted_files:
-                    extracted_path = destination / filename
-                    if not dry_run:
-                        with open(extracted_path, "w", encoding="utf-8") as f:
-                            f.write(file_content)
-                    stats_pages += 1
+                # Collect extracted files for batch processing later
+                all_extracted_files.extend(extracted_files)
 
                 # Skip writing journal file if it's empty after extraction
                 if not is_markdown_empty(remaining_content):
                     transformed_body = converter.convert_content(remaining_content)
-                    
+
                     frontmatter = []
                     frontmatter.append("---")
                     for k, v in properties.items():
                         frontmatter.append(f"{k}: {v}")
                     frontmatter.append("---")
-                    
+
                     final_content = "\n".join(frontmatter) + "\n\n" + transformed_body.strip()
                     final_content = trim_empty_bullets(final_content)
 
@@ -640,6 +653,20 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
 
             except Exception as e:
                 log_warning(f"Error processing journal {file_path.name}: {e}")
+
+        # Resolve all placeholder filenames in batch
+        resolved_files = converter.llm_generator.resolve_placeholders(all_extracted_files)
+
+        from logseq_converter.utils import handle_filename_collision
+
+        # Save resolved files directly in the root destination directory
+        for filename, file_content in resolved_files:
+            extracted_path = destination / filename
+            extracted_path = handle_filename_collision(extracted_path)
+            if not dry_run:
+                with open(extracted_path, "w", encoding="utf-8") as f:
+                    f.write(file_content)
+            stats_pages += 1
 
     # Create Tolaria metadata types
     create_tolaria_types(destination, dry_run)
@@ -667,6 +694,7 @@ def main() -> int:
     obsidian_parser.add_argument("destination", type=Path, help="Destination Obsidian vault directory")
     obsidian_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     obsidian_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
+    obsidian_parser.add_argument("--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion")
 
     # Tana command
     tana_parser = subparsers.add_parser("tana", help="Convert to Tana Intermediate Format")
@@ -682,6 +710,7 @@ def main() -> int:
     tolaria_parser.add_argument("destination", type=Path, help="Destination Tolaria vault directory")
     tolaria_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     tolaria_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
+    tolaria_parser.add_argument("--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion")
 
     # Blinko command
     blinko_parser = subparsers.add_parser("blinko", help="Export to Blinko")
@@ -699,11 +728,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "tolaria":
-        return convert_to_tolaria(args.source, args.destination, args.verbose, args.dry_run)
+        return convert_to_tolaria(args.source, args.destination, args.verbose, args.dry_run, args.clear_llm_cache)
     elif args.command == "tana":
         return convert_to_tana(args.source, args.destination, args.verbose, args.force, args.dry_run)
     elif args.command == "obsidian":
-        return convert_vault(args.source, args.destination, args.verbose, args.dry_run)
+        return convert_vault(args.source, args.destination, args.verbose, args.dry_run, args.clear_llm_cache)
     elif args.command == "blinko":
         return convert_to_blinko(args.source, args.endpoint, args.verbose, args.dry_run)
     elif args.command == "blinko:delete-all":

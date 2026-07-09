@@ -25,6 +25,8 @@ class ObsidianConverter:
     ):
         self.scanner = scanner
         self.stats = stats or ConversionStats()
+        from logseq_converter.llm import LLMFilenameGenerator
+        self.llm_generator = LLMFilenameGenerator()
 
     def transform_journal_filename(self, filename: str) -> Optional[str]:
         """
@@ -438,7 +440,16 @@ class ObsidianConverter:
         Converts a ContentItem to an Obsidian markdown file content.
         Returns (filename, content).
         """
-        filename = f"{sanitize_filename(generate_content_filename(item.description))}.md"
+        fallback_name = sanitize_filename(generate_content_filename(item.description))
+
+        if self.llm_generator and self.llm_generator.provider != "none":
+            checksum = self.llm_generator.get_content_hash(item.description, item.sub_items)
+            if checksum in self.llm_generator.cache:
+                filename = f"{self.llm_generator.cache[checksum]}.md"
+            else:
+                filename = f"__PENDING_LLM__{checksum}__{fallback_name}.md"
+        else:
+            filename = f"{fallback_name}.md"
 
         frontmatter = [
             "---",
