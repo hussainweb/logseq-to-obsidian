@@ -371,6 +371,119 @@ def convert_blinko_delete_all(endpoint: str, verbose: bool, dry_run: bool = Fals
     return 0
 
 
+def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
+    """
+    Creates type documents in the destination Tolaria vault's `type/` folder.
+    This formally registers entity types (like journal, learning, etc.) in the UI.
+    """
+    if dry_run:
+        return
+
+    type_dir = destination / "type"
+    type_dir.mkdir(parents=True, exist_ok=True)
+
+    types_config = {
+        "journal": {
+            "icon": "📓",
+            "_color": "#4f46e5",
+            "content": "# Plan for the day\n\n- \n\n# Log\n\n- \n"
+        },
+        "learning": {
+            "icon": "💡",
+            "_color": "#eab308",
+            "content": "# Summary\n\n- \n\n# Details\n\n- \n"
+        },
+        "link": {
+            "icon": "🔗",
+            "_color": "#3b82f6",
+            "content": ""
+        },
+        "achievement": {
+            "icon": "🏆",
+            "_color": "#10b981",
+            "content": "- \n"
+        },
+        "highlight": {
+            "icon": "✨",
+            "_color": "#f43f5e",
+            "content": "- \n"
+        },
+        "project": {
+            "icon": "📁",
+            "_color": "#ec4899",
+            "content": "# Overview\n\n- \n\n# Tasks\n\n- [ ] \n"
+        },
+        "work": {
+            "icon": "💼",
+            "_color": "#f97316",
+            "content": ""
+        },
+        "meeting": {
+            "icon": "👥",
+            "_color": "#8b5cf6",
+            "content": "# Agenda\n\n- \n\n# Notes\n\n- \n\n# Action Items\n\n- [ ] \n"
+        },
+        "device": {
+            "icon": "💻",
+            "_color": "#64748b",
+            "content": ""
+        },
+        "server": {
+            "icon": "🖥️",
+            "_color": "#475569",
+            "content": ""
+        },
+        "upkeep": {
+            "icon": "🛠️",
+            "_color": "#06b6d4",
+            "content": ""
+        },
+        "content-creation": {
+            "icon": "🎥",
+            "_color": "#d946ef",
+            "content": ""
+        },
+        "restaurant": {
+            "icon": "🍴",
+            "_color": "#14b8a6",
+            "content": ""
+        },
+        "prompt-template": {
+            "icon": "📝",
+            "_color": "#a855f7",
+            "content": ""
+        },
+        "book": {
+            "icon": "📖",
+            "_color": "#84cc16",
+            "content": ""
+        },
+        "list": {
+            "icon": "📋",
+            "_color": "#06b6d4",
+            "content": ""
+        }
+    }
+
+    for type_name, config in types_config.items():
+        type_file = type_dir / f"{type_name}.md"
+        # Only write if it does not exist, to avoid overwriting user edits
+        if not type_file.exists():
+            frontmatter = [
+                "---",
+                "type: Type",
+                f"icon: {config['icon']}",
+                f"_color: \"{config['_color']}\"",
+                "---"
+            ]
+            file_content = "\n".join(frontmatter) + "\n\n" + config["content"]
+            try:
+                with open(type_file, "w", encoding="utf-8") as f:
+                    f.write(file_content)
+            except Exception as e:
+                log_warning(f"Failed to write type note '{type_name}': {e}")
+
+
 def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: bool = False) -> int:
     try:
         validate_logseq_source(source)
@@ -496,6 +609,9 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
 
             except Exception as e:
                 log_warning(f"Error processing journal {file_path.name}: {e}")
+
+    # Create Tolaria metadata types
+    create_tolaria_types(destination, dry_run)
 
     log_progress("Conversion complete.")
     print("\nConversion Statistics:")
