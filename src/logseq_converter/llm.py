@@ -167,10 +167,24 @@ class OllamaLLMClient(BaseLLMClient):
     def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
         model_name = model or "qwen3:4b"
         host = ollama_host or "http://localhost:11434"
+        
+        # Standardize host with protocol
         if not host.startswith(("http://", "https://")):
             host = f"http://{host}"
+            
+        # Parse protocol and host part
+        proto = "https://" if host.startswith("https://") else "http://"
+        host_part = host[len(proto):]
+        
+        # Default Ollama port to 11434 if no port is explicitly specified
+        if ":" not in host_part:
+            host_part = f"{host_part.rstrip('/')}:11434"
+            
+        # Reconstruct base URL
+        host = f"{proto}{host_part}"
         if not host.endswith("/v1") and not host.endswith("/v1/"):
             host = host.rstrip("/") + "/v1"
+            
         client = OpenAI(
             base_url=host,
             api_key="ollama",
