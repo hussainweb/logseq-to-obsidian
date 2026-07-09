@@ -84,8 +84,9 @@ def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool 
 
     # Configure vault core settings and plugins
     if not dry_run:
-        from logseq_converter.obsidian.configurator import configure_core_vault
+        from logseq_converter.obsidian.configurator import configure_core_vault, configure_community_plugins
         configure_core_vault(destination)
+        configure_community_plugins(destination)
 
     log_progress("Conversion complete.")
 
