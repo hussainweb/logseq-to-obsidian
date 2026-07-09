@@ -4,6 +4,7 @@ from logseq_converter.utils import (
     generate_content_filename,
     parse_journal_date,
     sanitize_filename,
+    trim_empty_bullets,
 )
 
 
@@ -77,3 +78,25 @@ def test_generate_content_filename_custom_max_words():
     description = "Word1 Word2 Word3 Word4 Word5"
     result = generate_content_filename(description, max_words=3)
     assert result == "Word1 Word2 Word3"
+
+
+def test_trim_empty_bullets():
+    """Test trimming of leading/trailing empty bullets"""
+    # Simple content with leading and trailing empty bullets
+    content = "-\n- My actual content\n- \n- Another content\n-\n"
+    expected = "- My actual content\n- \n- Another content\n"
+    assert trim_empty_bullets(content) == expected
+
+    # Content with frontmatter and empty bullets
+    content = "---\ntitle: test\n---\n-\n- Content\n-\n"
+    expected = "---\ntitle: test\n---\n- Content\n"
+    assert trim_empty_bullets(content) == expected
+
+    # Empty content
+    assert trim_empty_bullets("") == ""
+    assert trim_empty_bullets(None) is None
+
+    # No empty bullets
+    content = "- Content\n"
+    assert trim_empty_bullets(content) == content
+

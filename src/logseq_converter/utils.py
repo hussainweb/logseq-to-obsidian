@@ -216,3 +216,55 @@ def is_markdown_empty(content: str) -> bool:
     # Remove characters we want to ignore
     cleaned = body_content.replace("-", "").replace("\n", "").replace(" ", "").replace("\t", "")
     return len(cleaned) == 0
+
+
+def trim_empty_bullets(content: str) -> str:
+    """
+    Trims leading and trailing empty bullet points (- or *) from markdown content.
+    Preserves any page frontmatter if present.
+    """
+    if not content:
+        return content
+
+    # 1. Separate frontmatter if present
+    frontmatter = ""
+    body = content
+
+    lines = content.split("\n")
+    if lines and lines[0].strip() == "---":
+        # Find closing ---
+        closing_idx = -1
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                closing_idx = i
+                break
+        if closing_idx != -1:
+            frontmatter = "\n".join(lines[:closing_idx + 1]) + "\n"
+            body = "\n".join(lines[closing_idx + 1:])
+
+    # 2. Trim leading and trailing empty bullets/lines from body
+    body_lines = body.split("\n")
+
+    start_idx = 0
+    while start_idx < len(body_lines):
+        line = body_lines[start_idx]
+        if not line.strip() or re.match(r"^\s*[-*]\s*$", line):
+            start_idx += 1
+        else:
+            break
+
+    end_idx = len(body_lines)
+    while end_idx > start_idx:
+        line = body_lines[end_idx - 1]
+        if not line.strip() or re.match(r"^\s*[-*]\s*$", line):
+            end_idx -= 1
+        else:
+            break
+
+    trimmed_body = "\n".join(body_lines[start_idx:end_idx])
+
+    # Ensure exactly one trailing newline if the body is not empty
+    if trimmed_body:
+        trimmed_body = trimmed_body.strip("\n") + "\n"
+
+    return frontmatter + trimmed_body

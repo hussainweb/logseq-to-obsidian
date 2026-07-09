@@ -45,6 +45,9 @@ class LogSeqParser:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        from logseq_converter.utils import trim_empty_bullets
+        content = trim_empty_bullets(content)
+
         blocks = self._parse_blocks(content)
 
         filename = file_path.name

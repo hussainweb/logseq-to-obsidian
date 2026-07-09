@@ -49,7 +49,7 @@ def test_full_vault_conversion(source_vault, dest_vault):
 
     # Verify content
     with open(dest_vault / "Daily" / "2025-11-27.md", "r") as f:
-        assert f.read() == "- Journal entry"
+        assert f.read().strip() == "- Journal entry"
 
     with open(dest_vault / "Category" / "Topic.md", "r") as f:
-        assert f.read() == "- Page content"
+        assert f.read().strip() == "- Page content"

@@ -16,6 +16,7 @@ from logseq_converter.utils import (
     is_markdown_empty,
     log_progress,
     log_warning,
+    trim_empty_bullets,
     validate_logseq_source,
     validate_output_directory,
 )
@@ -84,7 +85,7 @@ def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool 
 
     # Configure vault core settings and plugins
     if not dry_run:
-        from logseq_converter.obsidian.configurator import configure_core_vault, configure_community_plugins
+        from logseq_converter.obsidian.configurator import configure_community_plugins, configure_core_vault
         configure_core_vault(destination)
         configure_community_plugins(destination)
 
@@ -126,6 +127,8 @@ def _process_journals(
 
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
+
+                content = trim_empty_bullets(content)
 
                 # Extract sections (US3)
                 content, extracted_files = converter.extract_sections(content, file_path.name)
@@ -176,6 +179,8 @@ def _process_pages(
 
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
+
+            content = trim_empty_bullets(content)
 
             converted_content = converter.convert_content(content)
 
@@ -413,6 +418,8 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
+                content = trim_empty_bullets(content)
+
                 final_name, final_content = converter.process_metadata(file_path.name, content)
                 dest_path = destination / final_name
                 
@@ -440,6 +447,8 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
                 
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
+
+                content = trim_empty_bullets(content)
                     
                 remaining_content, properties = converter.extract_and_remove_frontmatter(content)
                 properties["type"] = "journal"
