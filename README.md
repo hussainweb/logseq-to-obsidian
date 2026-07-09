@@ -26,6 +26,10 @@ The converter features a robust pipeline built to ensure a clean, structured, an
   * Strips LogSeq task metadata like `:LOGBOOK:` entries and clock tracking tables.
 * **Asset Migration**
   * Copies your entire `assets` directory to the destination vault root, maintaining all references to local images, PDFs, and media attachments.
+* **Vault Configuration & Plugins**
+  * Bootstraps the `.obsidian` configuration folder in the destination vault.
+  * Enables the **Daily Notes** core plugin and configures its format (`YYYY-MM-DD`) and folder path (`Daily`) to align with the conversion output.
+  * Programmatically fetches, installs, and enables the latest release of the **Notebook Navigator** community plugin from GitHub to provide improved navigation for daily journals out of the box.
 
 ### Automated Section Extraction
 Keep your daily journals clean by extracting specific reflection/resource sections into separate folders. The converter scans daily notes for sections tagged or headed with `#links`, `#learnings`, `#achievements`, or `#highlights`.
