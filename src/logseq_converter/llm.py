@@ -16,6 +16,10 @@ class LLMClient:
     def provider(self) -> str:
         raise NotImplementedError()
 
+    @property
+    def max_workers(self) -> int:
+        raise NotImplementedError()
+
     def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
         raise NotImplementedError()
 
@@ -24,6 +28,10 @@ class RuleBasedFilenameClient(LLMClient):
     @property
     def provider(self) -> str:
         return "none"
+
+    @property
+    def max_workers(self) -> int:
+        return 1
 
     def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
         # Fast, local, rule-based generation fallback
@@ -37,6 +45,10 @@ class BaseLLMClient(LLMClient):
     def __init__(self, model: str, client: OpenAI):
         self.model = model
         self.client = client
+
+    @property
+    def max_workers(self) -> int:
+        raise NotImplementedError()
 
     def generate_filename_llm(self, description: str, sub_items: list[str]) -> Optional[str]:
         prompt_content = f"{description}\n" + "\n".join(sub_items)
@@ -104,7 +116,7 @@ class BaseLLMClient(LLMClient):
                 processed = sanitize_filename(generate_content_filename(description))
             return idx, processed
 
-        max_workers = min(15, total_pending)
+        max_workers = min(self.max_workers, total_pending)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_idx = {executor.submit(process_item, idx): idx for idx in range(total_pending)}
 
@@ -127,6 +139,10 @@ class OpenRouterLLMClient(BaseLLMClient):
     def provider(self) -> str:
         return "openrouter"
 
+    @property
+    def max_workers(self) -> int:
+        return 15
+
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         if not api_key:
             raise ValueError("OpenRouter requires LSC_API_KEY")
@@ -144,6 +160,10 @@ class OllamaLLMClient(BaseLLMClient):
     def provider(self) -> str:
         return "ollama"
 
+    @property
+    def max_workers(self) -> int:
+        return 1
+
     def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
         model_name = model or "qwen3:4b"
         host = ollama_host or "http://localhost:11434"
@@ -154,7 +174,7 @@ class OllamaLLMClient(BaseLLMClient):
         client = OpenAI(
             base_url=host,
             api_key="ollama",
-            timeout=30.0,
+            timeout=180.0,  # 3-minute timeout for slow local machines
         )
         super().__init__(model_name, client)
 
