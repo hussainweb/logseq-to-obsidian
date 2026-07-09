@@ -80,3 +80,110 @@ def configure_core_vault(destination: Path) -> None:
         log_progress("Configured Obsidian Daily Notes plugin.")
     except Exception as e:
         log_warning(f"Failed to write daily-notes.json: {e}")
+
+
+def enable_community_plugin(destination: Path, plugin_id: str) -> None:
+    """
+    Enables a community plugin by adding its ID to community-plugins.json.
+    """
+    obsidian_dir = destination / ".obsidian"
+    obsidian_dir.mkdir(parents=True, exist_ok=True)
+
+    community_plugins_path = obsidian_dir / "community-plugins.json"
+
+    enabled_plugins = []
+    if community_plugins_path.exists():
+        try:
+            with open(community_plugins_path, "r", encoding="utf-8") as f:
+                enabled_plugins = json.load(f)
+                if not isinstance(enabled_plugins, list):
+                    enabled_plugins = []
+        except Exception as e:
+            log_warning(f"Failed to read existing community-plugins.json: {e}")
+
+    if plugin_id not in enabled_plugins:
+        enabled_plugins.append(plugin_id)
+
+    try:
+        with open(community_plugins_path, "w", encoding="utf-8") as f:
+            json.dump(enabled_plugins, f, indent=2)
+    except Exception as e:
+        log_warning(f"Failed to write community-plugins.json: {e}")
+
+
+def install_community_plugin(destination: Path, plugin_id: str, repo: str) -> None:
+    """
+    Downloads the latest release of an Obsidian community plugin from GitHub
+    and places the main.js, manifest.json, and styles.css into the vault.
+    """
+    import ssl
+    import urllib.error
+    import urllib.request
+
+    plugin_dir = destination / ".obsidian" / "plugins" / plugin_id
+    plugin_dir.mkdir(parents=True, exist_ok=True)
+
+    api_url = f"https://api.github.com/repos/{repo}/releases/latest"
+    req = urllib.request.Request(
+        api_url,
+        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    )
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    try:
+        log_progress(f"Fetching latest release metadata for '{plugin_id}' from GitHub...")
+        with urllib.request.urlopen(req, context=ctx) as response:
+            release_info = json.loads(response.read().decode("utf-8"))
+
+        assets = release_info.get("assets", [])
+
+        # Download files
+        downloaded_count = 0
+        for asset in assets:
+            name = asset.get("name")
+            download_url = asset.get("browser_download_url")
+
+            # We only care about main.js, manifest.json, and styles.css
+            if name in {"main.js", "manifest.json", "styles.css"}:
+                asset_req = urllib.request.Request(
+                    download_url,
+                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+                )
+                log_progress(f"Downloading {name} for {plugin_id}...")
+                with urllib.request.urlopen(asset_req, context=ctx) as asset_response:
+                    content = asset_response.read()
+                    with open(plugin_dir / name, "wb") as f:
+                        f.write(content)
+                downloaded_count += 1
+
+        if downloaded_count == 0:
+            log_warning(f"No valid assets found to download for plugin '{plugin_id}' in {api_url}")
+            return
+
+        # Create/update data.json with defaults
+        data_json_path = plugin_dir / "data.json"
+        if not data_json_path.exists():
+            with open(data_json_path, "w", encoding="utf-8") as f:
+                json.dump({}, f)
+
+        # Enable plugin
+        enable_community_plugin(destination, plugin_id)
+        log_progress(f"Plugin '{plugin_id}' installed and enabled successfully.")
+
+    except urllib.error.URLError as e:
+        log_warning(f"Network error downloading plugin '{plugin_id}': {e}")
+    except Exception as e:
+        log_warning(f"Error installing plugin '{plugin_id}': {e}")
+
+
+def configure_community_plugins(destination: Path) -> None:
+    """
+    Configures community plugins for the Obsidian vault.
+    Installs Notebook Navigator as required.
+    """
+    # Install notebook-navigator
+    install_community_plugin(destination, "notebook-navigator", "johansan/notebook-navigator")
+
