@@ -26,7 +26,7 @@ LLM filename generation is enabled and configured entirely via environment varia
 ### Environment Variables
 *   `LSC_LLM`: Configures the LLM provider. Valid options are:
     *   `none`: (Default if auto-detection fails) Disables LLM filename generation.
-    *   `ollama`: Resolves base URL from `OLLAMA_HOST` and defaults model to `qwen3:4b`.
+    *   `ollama`: Resolves base URL from `OLLAMA_HOST` and defaults model to `gemma4:e4b`.
     *   `openrouter`: Resolves base URL to `https://openrouter.ai/api/v1` and defaults model to `google/gemini-2.5-flash-lite`.
 *   `LSC_API_KEY`: The API key (required for OpenRouter; ignored for Ollama).
 *   `LSC_MODEL`: Overrides the default model choice (e.g., `llama3.2` or `meta-llama/llama-3.2-3b-instruct`).

@@ -85,7 +85,7 @@ uv run python -m logseq_converter.cli obsidian <source_logseq_path> <destination
 **LLM Filename Generation:**
 You can optionally use a cheap LLM (Ollama or OpenRouter) to semantically name extracted learning, achievement, and highlight notes by setting environment variables:
 * **OpenRouter**: Set `LSC_API_KEY="sk-or-..."` (defaults model to `google/gemini-2.5-flash-lite`).
-* **Ollama**: Set `OLLAMA_HOST="http://192.168.1.50:11434"` (defaults model to `qwen3:4b`).
+* **Ollama**: Set `OLLAMA_HOST="http://192.168.1.50:11434"` (defaults model to `gemma4:e4b`).
 * **Explicit Provider Select**: Set `LSC_LLM` to `ollama` or `openrouter` (overrides auto-detection).
 
 **Example:**

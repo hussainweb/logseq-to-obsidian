@@ -18,7 +18,7 @@ def test_provider_resolution():
     generator = LLMFilenameGenerator(env={"OLLAMA_HOST": "http://192.168.1.10:11434"})
     assert generator.provider == "ollama"
     assert isinstance(generator.client, OllamaLLMClient)
-    assert generator.client.model == "qwen3:4b"
+    assert generator.client.model == "gemma4:e4b"
     assert generator.client.max_workers == 1
 
     # Test explicit override LSC_LLM

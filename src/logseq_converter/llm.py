@@ -171,7 +171,7 @@ class OllamaLLMClient(BaseLLMClient):
         return 1
 
     def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
-        model_name = model or "qwen3:4b"
+        model_name = model or "gemma4:e4b"
         host = ollama_host or "http://localhost:11434"
         
         # Standardize host with protocol
