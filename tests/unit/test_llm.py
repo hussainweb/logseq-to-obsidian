@@ -5,18 +5,21 @@ def test_provider_resolution():
     # Test fallback with no env vars (mocked as empty dict)
     generator = LLMFilenameGenerator(env={})
     assert generator.provider == "none"
+    assert generator.client.max_workers == 1
 
     # Test auto-detection: LSC_API_KEY set
     generator = LLMFilenameGenerator(env={"LSC_API_KEY": "sk-or-12345"})
     assert generator.provider == "openrouter"
     assert isinstance(generator.client, OpenRouterLLMClient)
     assert generator.client.model == "google/gemini-2.5-flash-lite"
+    assert generator.client.max_workers == 15
 
     # Test auto-detection: OLLAMA_HOST set
     generator = LLMFilenameGenerator(env={"OLLAMA_HOST": "http://192.168.1.10:11434"})
     assert generator.provider == "ollama"
     assert isinstance(generator.client, OllamaLLMClient)
     assert generator.client.model == "qwen3:4b"
+    assert generator.client.max_workers == 1
 
     # Test explicit override LSC_LLM
     generator = LLMFilenameGenerator(env={"LSC_LLM": "none", "LSC_API_KEY": "sk-or-12345"})
@@ -26,6 +29,7 @@ def test_provider_resolution():
     generator = LLMFilenameGenerator(env={"LSC_LLM": "ollama", "LSC_MODEL": "mistral"})
     assert generator.provider == "ollama"
     assert generator.client.model == "mistral"
+    assert generator.client.max_workers == 1
 
 
 def test_hashing_and_caching(tmp_path):
