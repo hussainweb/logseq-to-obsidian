@@ -4,7 +4,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from openai import OpenAI
 
@@ -16,159 +16,29 @@ class LLMClient:
     def provider(self) -> str:
         raise NotImplementedError()
 
-    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
+    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
         raise NotImplementedError()
 
 
-class NoneLLMClient(LLMClient):
+class RuleBasedFilenameClient(LLMClient):
     @property
     def provider(self) -> str:
         return "none"
 
-    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
-        return None
+    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
+        # Fast, local, rule-based generation fallback
+        return [
+            sanitize_filename(generate_content_filename(desc))
+            for desc, _ in items
+        ]
 
 
-class OpenRouterLLMClient(LLMClient):
-    @property
-    def provider(self) -> str:
-        return "openrouter"
+class BaseLLMClient(LLMClient):
+    def __init__(self, model: str, client: OpenAI):
+        self.model = model
+        self.client = client
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        if not api_key:
-            raise ValueError("OpenRouter requires LSC_API_KEY")
-        self.model = model or "google/gemini-2.5-flash-lite"
-        self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-            timeout=30.0,
-        )
-
-    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.3,
-            max_tokens=60,
-        )
-        return response.choices[0].message.content
-
-
-class OllamaLLMClient(LLMClient):
-    @property
-    def provider(self) -> str:
-        return "ollama"
-
-    def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
-        self.model = model or "qwen3:4b"
-        host = ollama_host or "http://localhost:11434"
-        if not host.startswith(("http://", "https://")):
-            host = f"http://{host}"
-        if not host.endswith("/v1") and not host.endswith("/v1/"):
-            host = host.rstrip("/") + "/v1"
-        self.client = OpenAI(
-            base_url=host,
-            api_key="ollama",
-            timeout=30.0,
-        )
-
-    def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.3,
-            max_tokens=60,
-        )
-        return response.choices[0].message.content
-
-
-def create_llm_client(env: Dict[str, str]) -> LLMClient:
-    """
-    Factory to resolve the provider and instantiate the correct LLMClient.
-    """
-    provider = env.get("LSC_LLM")
-    api_key = env.get("LSC_API_KEY")
-    ollama_host = env.get("OLLAMA_HOST")
-    model = env.get("LSC_MODEL")
-
-    if not provider:
-        if api_key:
-            provider = "openrouter"
-        elif ollama_host:
-            provider = "ollama"
-        else:
-            provider = "none"
-
-    provider = provider.lower().strip()
-
-    if provider == "openrouter":
-        return OpenRouterLLMClient(api_key=api_key, model=model)
-    elif provider == "ollama":
-        return OllamaLLMClient(ollama_host=ollama_host, model=model)
-
-    return NoneLLMClient()
-
-
-class LLMFilenameGenerator:
-    def __init__(self, env: Optional[Dict[str, str]] = None):
-        self.env = env if env is not None else os.environ
-        self.client = create_llm_client(self.env)
-        self.cache_path = self._get_cache_path()
-        self.cache = self._load_cache()
-
-    @property
-    def provider(self) -> str:
-        return self.client.provider
-
-    def _get_cache_path(self) -> Path:
-        if os.name == "nt":
-            base = Path(self.env.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
-        else:
-            base = Path(self.env.get("XDG_CACHE_HOME") or Path.home() / ".cache")
-
-        return base / "logseq-converter" / "filename_cache.json"
-
-    def _load_cache(self) -> Dict[str, str]:
-        if not self.cache_path.exists():
-            return {}
-        try:
-            with open(self.cache_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-
-    def _save_cache(self) -> None:
-        try:
-            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_path, "w", encoding="utf-8") as f:
-                json.dump(self.cache, f, indent=2)
-        except Exception:
-            pass
-
-    def clear_cache(self) -> None:
-        if not self.cache_path.exists():
-            self.cache = {}
-            return
-        try:
-            self.cache_path.unlink()
-        except Exception:
-            pass
-        self.cache = {}
-
-    def get_content_hash(self, description: str, sub_items: List[str]) -> str:
-        content = f"{description}\n" + "\n".join(sub_items)
-        return hashlib.sha256(content.encode("utf-8")).hexdigest()
-
-    def generate_filename_llm(self, description: str, sub_items: List[str]) -> Optional[str]:
-        if isinstance(self.client, NoneLLMClient):
-            return None
-
+    def generate_filename_llm(self, description: str, sub_items: list[str]) -> Optional[str]:
         prompt_content = f"{description}\n" + "\n".join(sub_items)
 
         system_prompt = (
@@ -181,7 +51,16 @@ class LLMFilenameGenerator:
         user_prompt = f"Summarize the following note content into a filename:\nContent:\n{prompt_content}"
 
         try:
-            filename = self.client.generate(system_prompt, user_prompt)
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.3,
+                max_tokens=60,
+            )
+            filename = response.choices[0].message.content
             if filename:
                 return filename.strip()
         except Exception as e:
@@ -211,9 +90,155 @@ class LLMFilenameGenerator:
 
         return sanitized
 
+    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
+        total_pending = len(items)
+        completed_count = 0
+        results = [None] * total_pending
+
+        def process_item(idx: int) -> tuple[int, str]:
+            description, sub_items = items[idx]
+            raw_filename = self.generate_filename_llm(description, sub_items)
+            if raw_filename:
+                processed = self.post_process_filename(raw_filename, description)
+            else:
+                processed = sanitize_filename(generate_content_filename(description))
+            return idx, processed
+
+        max_workers = min(15, total_pending)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_idx = {executor.submit(process_item, idx): idx for idx in range(total_pending)}
+
+            for future in as_completed(future_to_idx):
+                idx, filename = future.result()
+                results[idx] = filename
+
+                completed_count += 1
+                percent = int((completed_count / total_pending) * 100)
+                sys.stderr.write(
+                    f"\rGenerating filenames: {completed_count}/{total_pending} complete ({percent}%)..."
+                )
+                sys.stderr.flush()
+
+        return results
+
+
+class OpenRouterLLMClient(BaseLLMClient):
+    @property
+    def provider(self) -> str:
+        return "openrouter"
+
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        if not api_key:
+            raise ValueError("OpenRouter requires LSC_API_KEY")
+        model_name = model or "google/gemini-2.5-flash-lite"
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+            timeout=30.0,
+        )
+        super().__init__(model_name, client)
+
+
+class OllamaLLMClient(BaseLLMClient):
+    @property
+    def provider(self) -> str:
+        return "ollama"
+
+    def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
+        model_name = model or "qwen3:4b"
+        host = ollama_host or "http://localhost:11434"
+        if not host.startswith(("http://", "https://")):
+            host = f"http://{host}"
+        if not host.endswith("/v1") and not host.endswith("/v1/"):
+            host = host.rstrip("/") + "/v1"
+        client = OpenAI(
+            base_url=host,
+            api_key="ollama",
+            timeout=30.0,
+        )
+        super().__init__(model_name, client)
+
+
+def create_llm_client(env: dict[str, str]) -> LLMClient:
+    """
+    Factory to resolve the provider and instantiate the correct LLMClient.
+    """
+    provider = env.get("LSC_LLM")
+    api_key = env.get("LSC_API_KEY")
+    ollama_host = env.get("OLLAMA_HOST")
+    model = env.get("LSC_MODEL")
+
+    if not provider:
+        if api_key:
+            provider = "openrouter"
+        elif ollama_host:
+            provider = "ollama"
+        else:
+            provider = "none"
+
+    provider = provider.lower().strip()
+
+    if provider == "openrouter":
+        return OpenRouterLLMClient(api_key=api_key, model=model)
+    elif provider == "ollama":
+        return OllamaLLMClient(ollama_host=ollama_host, model=model)
+
+    return RuleBasedFilenameClient()
+
+
+class LLMFilenameGenerator:
+    def __init__(self, env: dict[str, str]):
+        self.env = env
+        self.client = create_llm_client(self.env)
+        self.cache_path = self._get_cache_path()
+        self.cache = self._load_cache()
+
+    @property
+    def provider(self) -> str:
+        return self.client.provider
+
+    def _get_cache_path(self) -> Path:
+        if os.name == "nt":
+            base = Path(self.env.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+        else:
+            base = Path(self.env.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+
+        return base / "logseq-converter" / "filename_cache.json"
+
+    def _load_cache(self) -> dict[str, str]:
+        if not self.cache_path.exists():
+            return {}
+        try:
+            with open(self.cache_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _save_cache(self) -> None:
+        try:
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.cache_path, "w", encoding="utf-8") as f:
+                json.dump(self.cache, f, indent=2)
+        except Exception:
+            pass
+
+    def clear_cache(self) -> None:
+        if not self.cache_path.exists():
+            self.cache = {}
+            return
+        try:
+            self.cache_path.unlink()
+        except Exception:
+            pass
+        self.cache = {}
+
+    def get_content_hash(self, description: str, sub_items: list[str]) -> str:
+        content = f"{description}\n" + "\n".join(sub_items)
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
     def resolve_filenames_batch(
-        self, items: List[Tuple[str, List[str]]]  # List of (description, sub_items)
-    ) -> List[str]:
+        self, items: list[tuple[str, list[str]]]  # List of (description, sub_items)
+    ) -> list[str]:
         results = [None] * len(items)
         pending_indices = []
 
@@ -234,49 +259,28 @@ class LLMFilenameGenerator:
         if total_pending == 0:
             return results
 
-        if isinstance(self.client, NoneLLMClient):
-            for idx in pending_indices:
-                description, _ = items[idx]
-                results[idx] = sanitize_filename(generate_content_filename(description))
-            return results
+        # Delegate batch resolution to the client
+        pending_items = [items[idx] for idx in pending_indices]
+        resolved_pending = self.client.resolve_batch(pending_items)
 
-        completed_count = 0
+        # Reconstruct results and save to cache
+        for i, idx in enumerate(pending_indices):
+            filename = resolved_pending[i]
+            results[idx] = filename
 
-        def process_item(idx: int) -> Tuple[int, str]:
             description, sub_items = items[idx]
-            raw_filename = self.generate_filename_llm(description, sub_items)
-            if raw_filename:
-                processed = self.post_process_filename(raw_filename, description)
-            else:
-                processed = sanitize_filename(generate_content_filename(description))
-            return idx, processed
+            checksum = self.get_content_hash(description, sub_items)
+            self.cache[checksum] = filename
 
-        max_workers = min(15, total_pending)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_idx = {executor.submit(process_item, idx): idx for idx in pending_indices}
-
-            for future in as_completed(future_to_idx):
-                idx, filename = future.result()
-                results[idx] = filename
-
-                description, sub_items = items[idx]
-                checksum = self.get_content_hash(description, sub_items)
-                self.cache[checksum] = filename
-
-                completed_count += 1
-                percent = int((completed_count / total_pending) * 100)
-                sys.stderr.write(
-                    f"\rGenerating filenames: {completed_count}/{total_pending} complete ({percent}%)..."
-                )
-                sys.stderr.flush()
+        # Only print the finished message if we resolved items via an API-based client (which prints progress)
+        if not isinstance(self.client, RuleBasedFilenameClient):
+            sys.stderr.write(f"\rGenerating filenames: {total_pending}/{total_pending} complete. Done.\n")
+            sys.stderr.flush()
 
         self._save_cache()
-        sys.stderr.write(f"\rGenerating filenames: {total_pending}/{total_pending} complete. Done.\n")
-        sys.stderr.flush()
-
         return results
 
-    def resolve_placeholders(self, extracted_files: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+    def resolve_placeholders(self, extracted_files: list[tuple[str, str]]) -> list[tuple[str, str]]:
         placeholders_to_resolve = []
 
         for idx, (filename, file_content) in enumerate(extracted_files):
@@ -309,7 +313,7 @@ class LLMFilenameGenerator:
 
         return final_files
 
-    def _parse_item_from_content(self, file_content: str) -> Tuple[str, List[str]]:
+    def _parse_item_from_content(self, file_content: str) -> tuple[str, list[str]]:
         lines = file_content.split("\n")
         start_idx = 0
         if lines and lines[0].strip() == "---":

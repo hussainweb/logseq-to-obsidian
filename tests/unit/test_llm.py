@@ -64,19 +64,20 @@ def test_hashing_and_caching(tmp_path):
 
 
 def test_post_process_filename():
-    generator = LLMFilenameGenerator(env={"LSC_LLM": "none"})
+    generator = LLMFilenameGenerator(env={"LSC_LLM": "ollama"})
+    client = generator.client
 
     # Test stripping markdown and quotes
-    assert generator.post_process_filename(' "My Cool File" ', "desc") == "My Cool File"
-    assert generator.post_process_filename("`Code Filename`", "desc") == "Code Filename"
-    assert generator.post_process_filename("Filename.md", "desc") == "Filename"
+    assert client.post_process_filename(' "My Cool File" ', "desc") == "My Cool File"
+    assert client.post_process_filename("`Code Filename`", "desc") == "Code Filename"
+    assert client.post_process_filename("Filename.md", "desc") == "Filename"
 
     # Test sanitization
-    assert generator.post_process_filename("Invalid/Name?", "desc") == "InvalidName"
+    assert client.post_process_filename("Invalid/Name?", "desc") == "InvalidName"
 
     # Test length guardrails (limit is 15 words)
     long_name = " ".join(["Word"] * 20)
-    processed_long = generator.post_process_filename(long_name, "desc")
+    processed_long = client.post_process_filename(long_name, "desc")
     assert len(processed_long.split()) == 6
 
 

@@ -27,7 +27,7 @@ class ObsidianConverter:
         self.scanner = scanner
         self.stats = stats or ConversionStats()
         from logseq_converter.llm import LLMFilenameGenerator
-        self.llm_generator = LLMFilenameGenerator(env=env)
+        self.llm_generator = LLMFilenameGenerator(env=env or {})
 
     def transform_journal_filename(self, filename: str) -> Optional[str]:
         """

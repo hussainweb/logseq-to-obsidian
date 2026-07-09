@@ -38,7 +38,7 @@ class TolariaConverter:
         self.stats_achievements = 0
         self.stats_highlights = 0
         from logseq_converter.llm import LLMFilenameGenerator
-        self.llm_generator = LLMFilenameGenerator(env=env)
+        self.llm_generator = LLMFilenameGenerator(env=env or {})
 
     def should_ignore(self, filename: str) -> bool:
         if filename in self.IGNORE_EXACT:
