@@ -82,6 +82,11 @@ def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool 
     # Process pages
     _process_pages(pages_dir, destination, converter, verbose, dry_run)
 
+    # Configure vault core settings and plugins
+    if not dry_run:
+        from logseq_converter.obsidian.configurator import configure_core_vault
+        configure_core_vault(destination)
+
     log_progress("Conversion complete.")
 
     # Output statistics
