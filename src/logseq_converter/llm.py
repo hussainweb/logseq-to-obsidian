@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from openai import OpenAI
+
 from logseq_converter.utils import generate_content_filename, sanitize_filename
 
 
@@ -260,7 +261,7 @@ class LLMFilenameGenerator:
 
         # Extract description and sub-items for pending items
         batch_items = []
-        for idx, filename, file_content, checksum, fallback in placeholders_to_resolve:
+        for _, _, file_content, _, _ in placeholders_to_resolve:
             description, sub_items = self._parse_item_from_content(file_content)
             batch_items.append((description, sub_items))
 
@@ -269,7 +270,7 @@ class LLMFilenameGenerator:
 
         # Reconstruct the final list of files
         final_files = list(extracted_files)
-        for i, (idx, filename, file_content, checksum, fallback) in enumerate(placeholders_to_resolve):
+        for i, (idx, filename, file_content, _, _) in enumerate(placeholders_to_resolve):
             resolved_base = resolved_basenames[i]
             # Replace placeholder in the path
             dir_name = os.path.dirname(filename)

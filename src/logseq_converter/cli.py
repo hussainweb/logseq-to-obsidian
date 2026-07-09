@@ -22,7 +22,13 @@ from logseq_converter.utils import (
 )
 
 
-def convert_vault(source: Path, destination: Path, verbose: bool, dry_run: bool = False, clear_llm_cache: bool = False) -> int:
+def convert_vault(
+    source: Path,
+    destination: Path,
+    verbose: bool,
+    dry_run: bool = False,
+    clear_llm_cache: bool = False,
+) -> int:
     try:
         validate_logseq_source(source)
     except (FileNotFoundError, NotADirectoryError, ValueError) as e:
@@ -529,7 +535,13 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 log_warning(f"Failed to write type note '{type_name}': {e}")
 
 
-def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: bool = False, clear_llm_cache: bool = False) -> int:
+def convert_to_tolaria(
+    source: Path,
+    destination: Path,
+    verbose: bool,
+    dry_run: bool = False,
+    clear_llm_cache: bool = False,
+) -> int:
     try:
         validate_logseq_source(source)
     except (FileNotFoundError, NotADirectoryError, ValueError) as e:
@@ -694,7 +706,9 @@ def main() -> int:
     obsidian_parser.add_argument("destination", type=Path, help="Destination Obsidian vault directory")
     obsidian_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     obsidian_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
-    obsidian_parser.add_argument("--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion")
+    obsidian_parser.add_argument(
+        "--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion"
+    )
 
     # Tana command
     tana_parser = subparsers.add_parser("tana", help="Convert to Tana Intermediate Format")
@@ -710,7 +724,9 @@ def main() -> int:
     tolaria_parser.add_argument("destination", type=Path, help="Destination Tolaria vault directory")
     tolaria_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     tolaria_parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without writing changes")
-    tolaria_parser.add_argument("--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion")
+    tolaria_parser.add_argument(
+        "--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion"
+    )
 
     # Blinko command
     blinko_parser = subparsers.add_parser("blinko", help="Export to Blinko")

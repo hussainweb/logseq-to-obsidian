@@ -80,10 +80,17 @@ uv run python -m logseq_converter.cli obsidian <source_logseq_path> <destination
 **Options:**
 * `-v`, `--verbose`: Enable detailed progress output.
 * `--dry-run`: Run the entire pipeline in simulation mode without writing files/folders to disk.
+* `--clear-llm-cache`: Clear the global LLM filename cache before starting conversion.
+
+**LLM Filename Generation:**
+You can optionally use a cheap LLM (Ollama or OpenRouter) to semantically name extracted learning, achievement, and highlight notes by setting environment variables:
+* **OpenRouter**: Set `LSC_API_KEY="sk-or-..."` (defaults model to `google/gemini-2.5-flash-lite`).
+* **Ollama**: Set `OLLAMA_HOST="http://192.168.1.50:11434"` (defaults model to `qwen3:4b`).
+* **Explicit Provider Select**: Set `LSC_LLM` to `ollama` or `openrouter` (overrides auto-detection).
 
 **Example:**
 ```bash
-uv run python -m logseq_converter.cli obsidian ~/notes/logseq ~/notes/obsidian -v
+LSC_API_KEY="your-api-key" uv run python -m logseq_converter.cli obsidian ~/notes/logseq ~/notes/obsidian -v
 ```
 
 ---
@@ -144,4 +151,5 @@ uv run ruff check .
 For a detailed look at the conversion rules, schemas, and verification steps:
 * [System Specifications](docs/specifications.md): Details on modular design, property pruning/filtering, block references, and target format schemas.
 * [Verification & Manual Testing Guide](docs/verification_guide.md): Step-by-step instructions on creating a mock graph to test and verify the CLI conversion commands.
+* [LLM Filename Generation](docs/llm_filename_generation.md): Guide to configuring and using Ollama/OpenRouter to semantically name extracted notes.
 
