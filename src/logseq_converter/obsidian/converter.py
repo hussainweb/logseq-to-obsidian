@@ -22,11 +22,20 @@ class ObsidianConverter:
         self,
         scanner: Optional[BlockReferenceScanner] = None,
         stats: Optional[ConversionStats] = None,
+        llm_provider: Optional[str] = None,
+        llm_api_key: Optional[str] = None,
+        llm_model: Optional[str] = None,
+        ollama_host: Optional[str] = None,
     ):
         self.scanner = scanner
         self.stats = stats or ConversionStats()
         from logseq_converter.llm import LLMFilenameGenerator
-        self.llm_generator = LLMFilenameGenerator()
+        self.llm_generator = LLMFilenameGenerator(
+            provider=llm_provider,
+            api_key=llm_api_key,
+            model=llm_model,
+            ollama_host=ollama_host,
+        )
 
     def transform_journal_filename(self, filename: str) -> Optional[str]:
         """

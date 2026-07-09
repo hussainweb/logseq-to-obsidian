@@ -26,7 +26,14 @@ class TolariaConverter:
         "hls__",
     )
 
-    def __init__(self, scanner: Optional[BlockReferenceScanner] = None):
+    def __init__(
+        self,
+        scanner: Optional[BlockReferenceScanner] = None,
+        llm_provider: Optional[str] = None,
+        llm_api_key: Optional[str] = None,
+        llm_model: Optional[str] = None,
+        ollama_host: Optional[str] = None,
+    ):
         self.scanner = scanner
         self.stats_block_refs = 0
         self.stats_links = 0
@@ -34,7 +41,12 @@ class TolariaConverter:
         self.stats_achievements = 0
         self.stats_highlights = 0
         from logseq_converter.llm import LLMFilenameGenerator
-        self.llm_generator = LLMFilenameGenerator()
+        self.llm_generator = LLMFilenameGenerator(
+            provider=llm_provider,
+            api_key=llm_api_key,
+            model=llm_model,
+            ollama_host=ollama_host,
+        )
 
     def should_ignore(self, filename: str) -> bool:
         if filename in self.IGNORE_EXACT:
