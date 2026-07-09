@@ -20,7 +20,7 @@ class LLMClient:
     def max_workers(self) -> int:
         raise NotImplementedError()
 
-    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
+    def resolve_batch(self, items: list[tuple[str, list[str]]], on_resolve=None) -> list[str]:
         raise NotImplementedError()
 
 
@@ -33,12 +33,15 @@ class RuleBasedFilenameClient(LLMClient):
     def max_workers(self) -> int:
         return 1
 
-    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
+    def resolve_batch(self, items: list[tuple[str, list[str]]], on_resolve=None) -> list[str]:
         # Fast, local, rule-based generation fallback
-        return [
-            sanitize_filename(generate_content_filename(desc))
-            for desc, _ in items
-        ]
+        results = []
+        for idx, (desc, _) in enumerate(items):
+            filename = sanitize_filename(generate_content_filename(desc))
+            results.append(filename)
+            if on_resolve:
+                on_resolve(idx, filename)
+        return results
 
 
 class BaseLLMClient(LLMClient):
@@ -102,7 +105,7 @@ class BaseLLMClient(LLMClient):
 
         return sanitized
 
-    def resolve_batch(self, items: list[tuple[str, list[str]]]) -> list[str]:
+    def resolve_batch(self, items: list[tuple[str, list[str]]], on_resolve=None) -> list[str]:
         total_pending = len(items)
         completed_count = 0
         results = [None] * total_pending
@@ -123,6 +126,9 @@ class BaseLLMClient(LLMClient):
             for future in as_completed(future_to_idx):
                 idx, filename = future.result()
                 results[idx] = filename
+                
+                if on_resolve:
+                    on_resolve(idx, filename)
 
                 completed_count += 1
                 percent = int((completed_count / total_pending) * 100)
@@ -293,9 +299,23 @@ class LLMFilenameGenerator:
         if total_pending == 0:
             return results
 
+        # Define a callback to save cache progressively
+        def on_resolve(pending_idx: int, filename: str):
+            idx = pending_indices[pending_idx]
+            description, sub_items = items[idx]
+            checksum = self.get_content_hash(description, sub_items)
+            self.cache[checksum] = filename
+
+            # Periodically write to disk (every 5 items resolved)
+            on_resolve.counter += 1
+            if on_resolve.counter % 5 == 0:
+                self._save_cache()
+
+        on_resolve.counter = 0
+
         # Delegate batch resolution to the client
         pending_items = [items[idx] for idx in pending_indices]
-        resolved_pending = self.client.resolve_batch(pending_items)
+        resolved_pending = self.client.resolve_batch(pending_items, on_resolve=on_resolve)
 
         # Reconstruct results and save to cache
         for i, idx in enumerate(pending_indices):
