@@ -393,6 +393,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
             "label": "Journal",
             "icon": "📓",
             "_color": "#4f46e5",
+            "sort": "title:desc",
             "content": "# \n\n## Plan for the day\n\n- \n\n## Log\n\n- \n"
         },
         "learning": {
@@ -501,6 +502,8 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
             ]
             if "sidebar_label" in config:
                 frontmatter.append(f"sidebar_label: {config['sidebar_label']}")
+            if "sort" in config:
+                frontmatter.append(f"sort: {config['sort']}")
             frontmatter.append("---")
             
             first_header = f"# {config['label']}"
