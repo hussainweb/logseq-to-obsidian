@@ -214,7 +214,7 @@ class TolariaConverter:
         # Mappings based on Logseq conventions
         if base_name.startswith("projects___"):
             parts = base_name.split("___")
-            properties["type"] = "project"
+            properties["type"] = "Project"
             if len(parts) >= 3:
                 properties["area"] = parts[1]
                 base_name = parts[-1]
@@ -223,23 +223,23 @@ class TolariaConverter:
         
         elif base_name.startswith("learnings___"):
             parts = base_name.split("___")
-            properties["type"] = "learning"
+            properties["type"] = "Learning"
             base_name = parts[-1]
             
         elif base_name.startswith("Lists___"):
             parts = base_name.split("___")
-            properties["type"] = "list"
+            properties["type"] = "List"
             base_name = parts[-1]
             
         elif base_name.startswith("Axelerant___"):
             parts = base_name.split("___")
-            properties["type"] = "work"
+            properties["type"] = "Work"
             properties["client"] = "Axelerant"
             base_name = parts[-1]
             
         elif base_name.startswith("Meetings___"):
             parts = base_name.split("___")
-            properties["type"] = "meeting"
+            properties["type"] = "Meeting"
             if len(parts) >= 3:
                 properties["meeting-type"] = parts[1]
                 base_name = parts[-1]
@@ -248,37 +248,37 @@ class TolariaConverter:
                 
         elif base_name.startswith("Devices___"):
             parts = base_name.split("___")
-            properties["type"] = "device"
+            properties["type"] = "Device"
             base_name = parts[-1]
             
         elif base_name.startswith("Servers___"):
             parts = base_name.split("___")
-            properties["type"] = "server"
+            properties["type"] = "Server"
             base_name = parts[-1]
             
         elif base_name.startswith("Upkeep___"):
             parts = base_name.split("___")
-            properties["type"] = "upkeep"
+            properties["type"] = "Upkeep"
             base_name = parts[-1]
             
         elif base_name.startswith("content-creation___"):
             parts = base_name.split("___")
-            properties["type"] = "content-creation"
+            properties["type"] = "Content Creation"
             base_name = parts[-1]
             
         elif base_name.startswith("Restaurants___"):
             parts = base_name.split("___")
-            properties["type"] = "restaurant"
+            properties["type"] = "Restaurant"
             base_name = parts[-1]
             
         elif base_name.startswith("prompt-templates___"):
             parts = base_name.split("___")
-            properties["type"] = "prompt-template"
+            properties["type"] = "Prompt Template"
             base_name = parts[-1]
             
         elif base_name.startswith("Books___"):
             parts = base_name.split("___")
-            properties["type"] = "book"
+            properties["type"] = "Book"
             base_name = parts[-1]
             
         else:
@@ -474,7 +474,7 @@ class TolariaConverter:
 
         frontmatter = [
             "---",
-            "type: link",
+            "type: Link",
             f"url: {item.url}",
         ]
         if item.github_url:
@@ -507,9 +507,16 @@ class TolariaConverter:
         if t_type.endswith("s"):
             t_type = t_type[:-1]
 
+        type_mapping = {
+            "learning": "Learning",
+            "achievement": "Achievement",
+            "highlight": "Highlight",
+        }
+        mapped_type = type_mapping.get(t_type, t_type.capitalize())
+
         frontmatter = [
             "---",
-            f"type: {t_type}",
+            f"type: {mapped_type}",
             f"date: {journal_date.isoformat()}",
             "---",
         ]

@@ -37,14 +37,14 @@ def test_tolaria_extract_sections():
     for name, file_content in extracted_files:
         if name == "Google.md":
             found_google = True
-            assert "type: link" in file_content
+            assert "type: Link" in file_content
             assert "url: https://google.com" in file_content
             assert "date: 2025-11-27" in file_content
             assert "# Google" in file_content
             assert "- search engine" in file_content
         elif name == "Learned something new.md":
             found_learning = True
-            assert "type: learning" in file_content
+            assert "type: Learning" in file_content
             assert "date: 2025-11-27" in file_content
             assert "Learned something new" in file_content
             assert "- details here" in file_content
@@ -104,7 +104,7 @@ learnings-prop:: test
     final_name, final_content = converter.process_metadata(filename, content)
 
     assert final_name == "My Test Learning.md"
-    assert "type: learning" in final_content
+    assert "type: Learning" in final_content
     # Frontmatter is preserved and merged
     assert "title: My Test Learning" in final_content
     assert "learnings-prop: test" in final_content

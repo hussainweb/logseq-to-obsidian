@@ -601,7 +601,7 @@ def convert_to_tolaria(source: Path, destination: Path, verbose: bool, dry_run: 
                 content = trim_empty_bullets(content)
                     
                 remaining_content, properties = converter.extract_and_remove_frontmatter(content)
-                properties["type"] = "journal"
+                properties["type"] = "Journal"
 
                 # Extract sections (learnings, achievements, highlights, links)
                 remaining_content, extracted_files = converter.extract_sections(remaining_content, file_path.name)
