@@ -390,81 +390,97 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
 
     types_config = {
         "journal": {
+            "label": "Journal",
             "icon": "📓",
             "_color": "#4f46e5",
             "content": "## Plan for the day\n\n- \n\n## Log\n\n- \n"
         },
         "learning": {
+            "label": "Learning",
             "icon": "💡",
             "_color": "#eab308",
             "content": "## Summary\n\n- \n\n## Details\n\n- \n"
         },
         "link": {
+            "label": "Link",
             "icon": "🔗",
             "_color": "#3b82f6",
             "content": ""
         },
         "achievement": {
+            "label": "Achievement",
             "icon": "🏆",
             "_color": "#10b981",
             "content": "- \n"
         },
         "highlight": {
+            "label": "Highlight",
             "icon": "✨",
             "_color": "#f43f5e",
             "content": "- \n"
         },
         "project": {
+            "label": "Project",
             "icon": "📁",
             "_color": "#ec4899",
             "content": "## Overview\n\n- \n\n## Tasks\n\n- [ ] \n"
         },
         "work": {
+            "label": "Work",
             "icon": "💼",
             "_color": "#f97316",
             "content": ""
         },
         "meeting": {
+            "label": "Meeting",
             "icon": "👥",
             "_color": "#8b5cf6",
             "content": "## Agenda\n\n- \n\n## Notes\n\n- \n\n## Action Items\n\n- [ ] \n"
         },
         "device": {
+            "label": "Device",
             "icon": "💻",
             "_color": "#64748b",
             "content": ""
         },
         "server": {
+            "label": "Server",
             "icon": "🖥️",
             "_color": "#475569",
             "content": ""
         },
         "upkeep": {
+            "label": "Upkeep",
             "icon": "🛠️",
             "_color": "#06b6d4",
             "content": ""
         },
         "content-creation": {
+            "label": "Content Creation",
             "icon": "🎥",
             "_color": "#d946ef",
             "content": ""
         },
         "restaurant": {
+            "label": "Restaurant",
             "icon": "🍴",
             "_color": "#14b8a6",
             "content": ""
         },
         "prompt-template": {
+            "label": "Prompt Template",
             "icon": "📝",
             "_color": "#a855f7",
             "content": ""
         },
         "book": {
+            "label": "Book",
             "icon": "📖",
             "_color": "#84cc16",
             "content": ""
         },
         "list": {
+            "label": "List",
             "icon": "📋",
             "_color": "#06b6d4",
             "content": ""
@@ -482,7 +498,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 f"_color: \"{config['_color']}\"",
                 "---"
             ]
-            first_header = f"# {type_name}"
+            first_header = f"# {config['label']}"
             file_content = "\n".join(frontmatter) + "\n\n" + first_header + "\n\n" + config["content"]
             try:
                 with open(type_file, "w", encoding="utf-8") as f:
