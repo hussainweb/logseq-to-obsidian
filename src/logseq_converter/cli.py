@@ -427,6 +427,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
         },
         "work": {
             "label": "Work",
+            "sidebar_label": "Work",
             "icon": "💼",
             "_color": "#f97316",
             "content": ""
@@ -451,6 +452,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
         },
         "upkeep": {
             "label": "Upkeep",
+            "sidebar_label": "Upkeep",
             "icon": "🛠️",
             "_color": "#06b6d4",
             "content": ""
@@ -496,8 +498,11 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 "type: Type",
                 f"icon: {config['icon']}",
                 f"_color: \"{config['_color']}\"",
-                "---"
             ]
+            if "sidebar_label" in config:
+                frontmatter.append(f"sidebar_label: {config['sidebar_label']}")
+            frontmatter.append("---")
+            
             first_header = f"# {config['label']}"
             file_content = "\n".join(frontmatter) + "\n\n" + first_header + "\n\n" + config["content"]
             try:
