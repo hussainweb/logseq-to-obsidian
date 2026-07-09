@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 from logseq_converter.llm import LLMFilenameGenerator
 
 
@@ -100,7 +98,10 @@ def test_resolve_placeholders(tmp_path, monkeypatch):
     # Simulated converter output with placeholder
     extracted_files = [
         ("Links/Google.md", "Url link"),
-        (f"Learnings/__PENDING_LLM__{checksum}__FastAPI Setup.md", f"---\ndate: 2025-11-27\n---\n\n{description}\n" + "\n".join(sub_items)),
+        (
+            f"Learnings/__PENDING_LLM__{checksum}__FastAPI Setup.md",
+            f"---\ndate: 2025-11-27\n---\n\n{description}\n" + "\n".join(sub_items),
+        ),
     ]
 
     resolved = generator.resolve_placeholders(extracted_files)
