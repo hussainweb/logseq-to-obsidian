@@ -2,38 +2,39 @@ from logseq_converter.llm import LLMFilenameGenerator, OllamaLLMClient, OpenRout
 
 
 def test_provider_resolution():
-    # Test fallback with no params
-    generator = LLMFilenameGenerator()
+    # Test fallback with no env vars (mocked as empty dict)
+    generator = LLMFilenameGenerator(env={})
     assert generator.provider == "none"
 
-    # Test auto-detection: api_key set
-    generator = LLMFilenameGenerator(api_key="sk-or-12345")
+    # Test auto-detection: LSC_API_KEY set
+    generator = LLMFilenameGenerator(env={"LSC_API_KEY": "sk-or-12345"})
     assert generator.provider == "openrouter"
     assert isinstance(generator.client, OpenRouterLLMClient)
     assert generator.client.model == "google/gemini-2.5-flash-lite"
 
-    # Test auto-detection: ollama_host set
-    generator = LLMFilenameGenerator(ollama_host="http://192.168.1.10:11434")
+    # Test auto-detection: OLLAMA_HOST set
+    generator = LLMFilenameGenerator(env={"OLLAMA_HOST": "http://192.168.1.10:11434"})
     assert generator.provider == "ollama"
     assert isinstance(generator.client, OllamaLLMClient)
     assert generator.client.model == "qwen3:4b"
 
-    # Test explicit override provider
-    generator = LLMFilenameGenerator(provider="none", api_key="sk-or-12345")
+    # Test explicit override LSC_LLM
+    generator = LLMFilenameGenerator(env={"LSC_LLM": "none", "LSC_API_KEY": "sk-or-12345"})
     assert generator.provider == "none"
 
-    # Test explicit model override
-    generator = LLMFilenameGenerator(provider="ollama", model="mistral")
+    # Test explicit model override LSC_MODEL
+    generator = LLMFilenameGenerator(env={"LSC_LLM": "ollama", "LSC_MODEL": "mistral"})
     assert generator.provider == "ollama"
     assert generator.client.model == "mistral"
 
 
-def test_hashing_and_caching(tmp_path, monkeypatch):
-    # Redirect cache path to tmp folder for isolation
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-
-    generator = LLMFilenameGenerator()
+def test_hashing_and_caching(tmp_path):
+    # Inject XDG_CACHE_HOME in env to isolate cache path in tmp folder
+    generator = LLMFilenameGenerator(env={
+        "LSC_LLM": "none",
+        "XDG_CACHE_HOME": str(tmp_path),
+        "LOCALAPPDATA": str(tmp_path)
+    })
     assert generator.cache_path.name == "filename_cache.json"
 
     description = "Learned how to test LLM code"
@@ -49,7 +50,11 @@ def test_hashing_and_caching(tmp_path, monkeypatch):
     generator._save_cache()
 
     # Create new generator instance to test loading from cache
-    generator2 = LLMFilenameGenerator()
+    generator2 = LLMFilenameGenerator(env={
+        "LSC_LLM": "none",
+        "XDG_CACHE_HOME": str(tmp_path),
+        "LOCALAPPDATA": str(tmp_path)
+    })
     assert generator2.cache.get(hash_val) == "Testing LLM Code"
 
     # Clear cache
@@ -59,7 +64,7 @@ def test_hashing_and_caching(tmp_path, monkeypatch):
 
 
 def test_post_process_filename():
-    generator = LLMFilenameGenerator()
+    generator = LLMFilenameGenerator(env={"LSC_LLM": "none"})
 
     # Test stripping markdown and quotes
     assert generator.post_process_filename(' "My Cool File" ', "desc") == "My Cool File"
@@ -75,12 +80,13 @@ def test_post_process_filename():
     assert len(processed_long.split()) == 6
 
 
-def test_resolve_placeholders(tmp_path, monkeypatch):
-    # Redirect cache path to tmp folder for isolation
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-
-    generator = LLMFilenameGenerator(provider="none")
+def test_resolve_placeholders(tmp_path):
+    # Inject XDG_CACHE_HOME in env to isolate cache path in tmp folder
+    generator = LLMFilenameGenerator(env={
+        "LSC_LLM": "none",
+        "XDG_CACHE_HOME": str(tmp_path),
+        "LOCALAPPDATA": str(tmp_path)
+    })
 
     description = "Setting up FastAPI project"
     sub_items = ["- Add uvicorn", "- Write main.py"]

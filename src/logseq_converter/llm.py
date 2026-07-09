@@ -12,16 +12,28 @@ from logseq_converter.utils import generate_content_filename, sanitize_filename
 
 
 class LLMClient:
+    @property
+    def provider(self) -> str:
+        raise NotImplementedError()
+
     def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
         raise NotImplementedError()
 
 
 class NoneLLMClient(LLMClient):
+    @property
+    def provider(self) -> str:
+        return "none"
+
     def generate(self, system_prompt: str, user_prompt: str) -> Optional[str]:
         return None
 
 
 class OpenRouterLLMClient(LLMClient):
+    @property
+    def provider(self) -> str:
+        return "openrouter"
+
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         if not api_key:
             raise ValueError("OpenRouter requires LSC_API_KEY")
@@ -46,6 +58,10 @@ class OpenRouterLLMClient(LLMClient):
 
 
 class OllamaLLMClient(LLMClient):
+    @property
+    def provider(self) -> str:
+        return "ollama"
+
     def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
         self.model = model or "qwen3:4b"
         host = ollama_host or "http://localhost:11434"
@@ -72,74 +88,49 @@ class OllamaLLMClient(LLMClient):
         return response.choices[0].message.content
 
 
-def create_llm_client(
-    provider: Optional[str] = None,
-    api_key: Optional[str] = None,
-    model: Optional[str] = None,
-    ollama_host: Optional[str] = None,
-) -> Tuple[str, LLMClient]:
+def create_llm_client(env: Dict[str, str]) -> LLMClient:
     """
     Factory to resolve the provider and instantiate the correct LLMClient.
-    Returns (resolved_provider_name, llm_client).
     """
-    resolved_provider = provider
-    if resolved_provider is None:
+    provider = env.get("LSC_LLM")
+    api_key = env.get("LSC_API_KEY")
+    ollama_host = env.get("OLLAMA_HOST")
+    model = env.get("LSC_MODEL")
+
+    if not provider:
         if api_key:
-            resolved_provider = "openrouter"
+            provider = "openrouter"
         elif ollama_host:
-            resolved_provider = "ollama"
+            provider = "ollama"
         else:
-            resolved_provider = "none"
+            provider = "none"
 
-    resolved_provider = resolved_provider.lower().strip()
+    provider = provider.lower().strip()
 
-    if resolved_provider == "openrouter":
-        try:
-            return "openrouter", OpenRouterLLMClient(api_key=api_key, model=model)
-        except ValueError:
-            # Re-raise if OpenRouter was explicitly selected but fails initialization
-            if provider is not None:
-                raise
-    elif resolved_provider == "ollama":
-        return "ollama", OllamaLLMClient(ollama_host=ollama_host, model=model)
-    elif resolved_provider == "none":
-        return "none", NoneLLMClient()
+    if provider == "openrouter":
+        return OpenRouterLLMClient(api_key=api_key, model=model)
+    elif provider == "ollama":
+        return OllamaLLMClient(ollama_host=ollama_host, model=model)
 
-    # Dynamic fallback search (in case provider wasn't explicitly selected)
-    if provider is None:
-        if api_key:
-            try:
-                return "openrouter", OpenRouterLLMClient(api_key=api_key, model=model)
-            except ValueError:
-                pass
-        if ollama_host:
-            return "ollama", OllamaLLMClient(ollama_host=ollama_host, model=model)
-
-    return "none", NoneLLMClient()
+    return NoneLLMClient()
 
 
 class LLMFilenameGenerator:
-    def __init__(
-        self,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        ollama_host: Optional[str] = None,
-    ):
-        self.provider, self.client = create_llm_client(
-            provider=provider,
-            api_key=api_key,
-            model=model,
-            ollama_host=ollama_host,
-        )
+    def __init__(self, env: Optional[Dict[str, str]] = None):
+        self.env = env if env is not None else os.environ
+        self.client = create_llm_client(self.env)
         self.cache_path = self._get_cache_path()
         self.cache = self._load_cache()
 
+    @property
+    def provider(self) -> str:
+        return self.client.provider
+
     def _get_cache_path(self) -> Path:
         if os.name == "nt":
-            base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+            base = Path(self.env.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
         else:
-            base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+            base = Path(self.env.get("XDG_CACHE_HOME") or Path.home() / ".cache")
 
         return base / "logseq-converter" / "filename_cache.json"
 
@@ -175,7 +166,7 @@ class LLMFilenameGenerator:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def generate_filename_llm(self, description: str, sub_items: List[str]) -> Optional[str]:
-        if self.provider == "none" or not self.client:
+        if isinstance(self.client, NoneLLMClient):
             return None
 
         prompt_content = f"{description}\n" + "\n".join(sub_items)
@@ -243,7 +234,7 @@ class LLMFilenameGenerator:
         if total_pending == 0:
             return results
 
-        if self.provider == "none":
+        if isinstance(self.client, NoneLLMClient):
             for idx in pending_indices:
                 description, _ = items[idx]
                 results[idx] = sanitize_filename(generate_content_filename(description))
