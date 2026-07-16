@@ -9,7 +9,7 @@ description = "Convert LogSeq graph to Obsidian vault"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "mistletoe>=1.0.0",
+    "mistletoe>=1.6.0",
     "openai>=1.0.0",
 ]
 
