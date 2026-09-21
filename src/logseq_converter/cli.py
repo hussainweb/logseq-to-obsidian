@@ -483,6 +483,7 @@ def convert_to_tolaria(
     source: Path,
     destination: Path,
     verbose: bool,
+    force: bool = False,
     dry_run: bool = False,
     clear_llm_cache: bool = False,
 ) -> int:
@@ -493,7 +494,7 @@ def convert_to_tolaria(
         return 1
 
     try:
-        validate_output_directory(destination)
+        validate_output_directory(destination, force=force)
     except FileExistsError as e:
         log_warning(str(e))
         return 1
@@ -670,6 +671,7 @@ def main() -> int:
     tolaria_parser.add_argument(
         "--clear-llm-cache", action="store_true", help="Clear global LLM cache before conversion"
     )
+    tolaria_parser.add_argument("-f", "--force", action="store_true", help="Force overwrite of destination directory")
 
     # Blinko command
     blinko_parser = subparsers.add_parser("blinko", help="Export to Blinko")
@@ -687,7 +689,9 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "tolaria":
-        return convert_to_tolaria(args.source, args.destination, args.verbose, args.dry_run, args.clear_llm_cache)
+        return convert_to_tolaria(
+            args.source, args.destination, args.verbose, args.force, args.dry_run, args.clear_llm_cache
+        )
     elif args.command == "tana":
         return convert_to_tana(args.source, args.destination, args.verbose, args.force, args.dry_run)
     elif args.command == "obsidian":
