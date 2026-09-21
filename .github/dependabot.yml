@@ -5,11 +5,19 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      python-dependencies:
+      dev-dependencies:
         patterns:
-          - "*"
+          - "pytest*"
+          - "ruff*"
+          - "mypy*"
+          - "ty*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "actions/*"
+
