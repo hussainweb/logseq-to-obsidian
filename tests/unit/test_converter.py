@@ -50,3 +50,28 @@ def test_convert_link_item_no_github():
     assert "date: 2023-11-28" in content
     assert "# Simple Link" in content
     assert "- [Simple Link](https://simple.com)" in content
+
+
+def test_obsidian_convert_content_tasks_and_schedules():
+    converter = ObsidianConverter()
+    content = """- TODO Buy groceries
+  SCHEDULED: <2025-11-28 Fri>
+- DOING Working on migration DEADLINE: <2025-12-01 Mon>
+- DONE Done with task
+- CANCELLED Obsolete task
+- WAITING Awaiting response
+"""
+    result = converter.convert_content(content)
+    assert "- [ ] Buy groceries ⏳ 2025-11-28" in result
+    assert "- [/] Working on migration 📅 2025-12-01" in result
+    assert "- [x] Done with task" in result
+    assert "- [-] Obsolete task" in result
+    assert "- [?] Awaiting response" in result
+
+
+def test_obsidian_should_ignore():
+    converter = ObsidianConverter()
+    assert converter.should_ignore("Readwise.md") is True
+    assert converter.should_ignore("articles___Highlights___Post1.md") is True
+    assert converter.should_ignore("books___Highlights___Book1.md") is True
+    assert converter.should_ignore("projects___MyProject.md") is False

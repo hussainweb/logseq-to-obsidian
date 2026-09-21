@@ -46,6 +46,7 @@ class LogSeqParser:
             content = f.read()
 
         from logseq_converter.utils import trim_empty_bullets
+
         content = trim_empty_bullets(content)
 
         blocks = self._parse_blocks(content)

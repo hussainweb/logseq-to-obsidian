@@ -126,15 +126,13 @@ class BaseLLMClient(LLMClient):
             for future in as_completed(future_to_idx):
                 idx, filename = future.result()
                 results[idx] = filename
-                
+
                 if on_resolve:
                     on_resolve(idx, filename)
 
                 completed_count += 1
                 percent = int((completed_count / total_pending) * 100)
-                sys.stderr.write(
-                    f"\rGenerating filenames: {completed_count}/{total_pending} complete ({percent}%)..."
-                )
+                sys.stderr.write(f"\rGenerating filenames: {completed_count}/{total_pending} complete ({percent}%)...")
                 sys.stderr.flush()
 
         return results
@@ -173,24 +171,24 @@ class OllamaLLMClient(BaseLLMClient):
     def __init__(self, ollama_host: Optional[str] = None, model: Optional[str] = None):
         model_name = model or "gemma4:e4b"
         host = ollama_host or "http://localhost:11434"
-        
+
         # Standardize host with protocol
         if not host.startswith(("http://", "https://")):
             host = f"http://{host}"
-            
+
         # Parse protocol and host part
         proto = "https://" if host.startswith("https://") else "http://"
-        host_part = host[len(proto):]
-        
+        host_part = host[len(proto) :]
+
         # Default Ollama port to 11434 if no port is explicitly specified
         if ":" not in host_part:
             host_part = f"{host_part.rstrip('/')}:11434"
-            
+
         # Reconstruct base URL
         host = f"{proto}{host_part}"
         if not host.endswith("/v1") and not host.endswith("/v1/"):
             host = host.rstrip("/") + "/v1"
-            
+
         client = OpenAI(
             base_url=host,
             api_key="ollama",
@@ -277,7 +275,8 @@ class LLMFilenameGenerator:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def resolve_filenames_batch(
-        self, items: list[tuple[str, list[str]]]  # List of (description, sub_items)
+        self,
+        items: list[tuple[str, list[str]]],  # List of (description, sub_items)
     ) -> list[str]:
         results = [None] * len(items)
         pending_indices = []
@@ -291,9 +290,7 @@ class LLMFilenameGenerator:
 
         total_pending = len(pending_indices)
 
-        sys.stderr.write(
-            f"LLM filename generation: {len(items) - total_pending} cached, {total_pending} pending...\n"
-        )
+        sys.stderr.write(f"LLM filename generation: {len(items) - total_pending} cached, {total_pending} pending...\n")
         sys.stderr.flush()
 
         if total_pending == 0:

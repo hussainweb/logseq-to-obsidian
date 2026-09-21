@@ -40,7 +40,11 @@ The Obsidian writer converts a LogSeq graph into a directory structured as an Ob
   - `icon`
   - `title`
   - `exclude-from-graph-view`
+* **Page Exclusions**: Readwise highlight export pages (`articles___Highlights___*`, `books___Highlights___*`, `podcasts___Highlights___*`, `tweets___Highlights___*`, `hls__*`) and helper pages (`Readwise.md`, `author.md`, `category.md`, `url.md`, `full-title.md`, `contents.md`) are automatically skipped.
 * **Logbook Cleanup**: All Logseq `:LOGBOOK:` clock-tracking sections (e.g. `CLOCK: [2025-11-27 Thu 10:00]--[2025-11-27 Thu 11:00] =>  01:00`) are removed to keep task lines clean.
+* **Task & Schedule Conversion**:
+  - Task states are transformed to standard Markdown checkboxes: `TODO`/`LATER` -> `- [ ]`, `DOING`/`NOW` -> `- [/]`, `DONE` -> `- [x]`, `CANCELLED` -> `- [-]`, and `WAITING` -> `- [?]`.
+  - Task metadata `SCHEDULED: <YYYY-MM-DD...>` is converted to `⏳ YYYY-MM-DD` and `DEADLINE: <YYYY-MM-DD...>` to `📅 YYYY-MM-DD`. Sub-bullet schedules are merged directly onto the parent task line.
 * **Block References & IDs**:
   - LogSeq block UUIDs (`id:: uuid`) are transformed into native Obsidian block anchors (`^blockid`) appended to the end of the block.
   - LogSeq block references (`((uuid))`) are translated to internal links targeting the correct file and anchor: `[[filename#^blockid]]`.
@@ -70,8 +74,11 @@ Converts the entire LogSeq vault into a single JSON file adhering to the Tana In
 
 ## 🔮 Target: Tolaria Markdown
 
-Converts LogSeq pages and journals into Tolaria-flavored Markdown:
+Converts LogSeq pages and journals into Tolaria-flavored Markdown adhering to the Portent specification:
 * **Journal Directory**: Daily journals are transformed and saved into a subdirectory named `journal/` (lowercase, singular).
+* **Portent Relationships**: Namespaces (e.g. `projects___Area___Project`, `Axelerant___*`, `Meetings___*`) are mapped to `belongs_to: "[[Parent]]"` and `related_to: "[[Context]]"` frontmatter relationship links.
+* **H1 Title Guarantee**: Automatically injects `# <Title>` as the primary H1 header at the top of the body for notes lacking an H1, ensuring proper display titles across Tolaria's UI.
+* **Task & Schedule Conversion**: Converts Logseq task states and schedules into Markdown checkboxes and standard date emojis.
 * **Metadata Normalization**: Normalizes and formats YAML frontmatter, injecting a `type: journal` property into journals.
 * **Block ID Removal**: Removes LogSeq block UUIDs (`id:: uuid`) to keep the Markdown output completely clean.
 

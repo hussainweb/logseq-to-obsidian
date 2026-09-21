@@ -41,8 +41,8 @@ def test_transform_block_refs():
     expected = "Reference to [[Target/Page#^12345678-1234-1234-1234-1234567890ab]]"
 
     # Mock return value
-    scanner.get_file_for_block.side_effect = (
-        lambda uuid: Path("pages/Target___Page.md") if uuid == "12345678-1234-1234-1234-1234567890ab" else None
+    scanner.get_file_for_block.side_effect = lambda uuid: (
+        Path("pages/Target___Page.md") if uuid == "12345678-1234-1234-1234-1234567890ab" else None
     )
 
     assert converter._transform_block_refs(content) == expected

@@ -100,3 +100,44 @@ def test_trim_empty_bullets():
     content = "- Content\n"
     assert trim_empty_bullets(content) == content
 
+
+def test_should_ignore_page():
+    from logseq_converter.utils import should_ignore_page
+
+    assert should_ignore_page("Readwise.md") is True
+    assert should_ignore_page("author.md") is True
+    assert should_ignore_page("category.md") is True
+    assert should_ignore_page("articles___Highlights___Article1.md") is True
+    assert should_ignore_page("books___Highlights___Book1.md") is True
+    assert should_ignore_page("hls__tag.md") is True
+    assert should_ignore_page("projects___MyProject.md") is False
+    assert should_ignore_page("RegularNote.md") is False
+
+
+def test_transform_tasks_and_schedules():
+    from logseq_converter.utils import transform_tasks_and_schedules
+
+    content = """- TODO Buy milk
+  SCHEDULED: <2025-11-28 Fri 10:00>
+- LATER Someday task
+- DOING In progress task
+  DEADLINE: <2025-12-01 Mon>
+- NOW Immediate task
+- DONE Completed task
+  DEADLINE: <2025-11-20> SCHEDULED: <2025-11-15>
+- CANCELLED Dropped task
+- WAITING Waiting on review
+- Regular note without task
+"""
+    result = transform_tasks_and_schedules(content)
+
+    assert "- [ ] Buy milk ⏳ 2025-11-28" in result
+    assert "- [ ] Someday task" in result
+    assert "- [/] In progress task 📅 2025-12-01" in result
+    assert "- [/] Immediate task" in result
+    assert "- [x] Completed task 📅 2025-11-20 ⏳ 2025-11-15" in result
+    assert "- [-] Dropped task" in result
+    assert "- [?] Waiting on review" in result
+    assert "- Regular note without task" in result
+    assert "SCHEDULED:" not in result
+    assert "DEADLINE:" not in result

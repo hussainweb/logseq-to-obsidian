@@ -24,6 +24,10 @@ The converter features a robust pipeline built to ensure a clean, structured, an
   * Promotes LogSeq block/page properties (`key:: value`) into a clean YAML frontmatter block at the top of files.
   * Filters out LogSeq-specific UI/presentation properties (e.g., `heading::`, `collapsed::`, `icon::`, `title::`, `exclude-from-graph-view::`) to keep your Obsidian notes clutter-free.
   * Strips LogSeq task metadata like `:LOGBOOK:` entries and clock tracking tables.
+  * Automatically skips transient and highlight export pages (e.g., Readwise dumps and metadata helpers).
+* **Task & Schedule Conversion**
+  * Transforms LogSeq task states (`TODO`, `DOING`, `LATER`, `NOW`, `DONE`, `CANCELLED`, `WAITING`) to standard Markdown checkboxes (`- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`).
+  * Converts `SCHEDULED: <...>` and `DEADLINE: <...>` into Obsidian Tasks emoji tags (`⏳ YYYY-MM-DD`, `📅 YYYY-MM-DD`), seamlessly merging sub-bullet schedules onto parent task lines.
 * **Asset Migration**
   * Copies your entire `assets` directory to the destination vault root, maintaining all references to local images, PDFs, and media attachments.
 * **Vault Configuration & Plugins**
@@ -109,11 +113,16 @@ uv run python -m logseq_converter.cli tana <source_logseq_path> <destination_fil
 * **Options**: Use `-f` or `--force` to overwrite the output file if it already exists.
 
 ### 3. Convert to Tolaria
-Converts journals and pages to Tolaria's Markdown formatting guidelines (placing daily notes into a `journal/` directory):
+Converts journals and pages to Tolaria's Markdown formatting guidelines adhering to the Portent specification:
 
 ```bash
 uv run python -m logseq_converter.cli tolaria <source_logseq_path> <destination_tolaria_path> [options]
 ```
+* **Features**:
+  * Maps namespaces into standard Portent relationship links (`belongs_to: "[[Parent]]"`, `related_to: "[[Context]]"`).
+  * Automatically injects an `# H1` heading as the note display title if missing.
+  * Transforms Logseq tasks (`TODO`, `DOING`, `DONE`, `CANCELLED`, `WAITING`) and `SCHEDULED`/`DEADLINE` timestamps into standard Markdown checkboxes and task date emojis.
+  * Preserves daily notes in a `journal/` directory and bootstraps Portent entity types (`Journal`, `Project`, `Learning`, `Work`, `Meeting`, etc.).
 
 ### 4. Sync to Blinko
 Exports LogSeq notes directly to a self-hosted **Blinko** instance using the API:

@@ -239,8 +239,8 @@ def trim_empty_bullets(content: str) -> str:
                 closing_idx = i
                 break
         if closing_idx != -1:
-            frontmatter = "\n".join(lines[:closing_idx + 1]) + "\n"
-            body = "\n".join(lines[closing_idx + 1:])
+            frontmatter = "\n".join(lines[: closing_idx + 1]) + "\n"
+            body = "\n".join(lines[closing_idx + 1 :])
 
     # 2. Trim leading and trailing empty bullets/lines from body
     body_lines = body.split("\n")
@@ -268,3 +268,108 @@ def trim_empty_bullets(content: str) -> str:
         trimmed_body = trimmed_body.strip("\n") + "\n"
 
     return frontmatter + trimmed_body
+
+
+IGNORE_EXACT_PAGES = {
+    "Readwise.md",
+    "author.md",
+    "category.md",
+    "url.md",
+    "full-title.md",
+    "contents.md",
+}
+
+IGNORE_PREFIX_PAGES = (
+    "articles___Highlights___",
+    "books___Highlights___",
+    "podcasts___Highlights___",
+    "tweets___Highlights___",
+    "hls__",
+)
+
+
+def should_ignore_page(filename: str) -> bool:
+    """
+    Checks whether a page filename should be excluded from conversion
+    (e.g., Readwise highlight dumps, metadata helper pages).
+    """
+    if filename in IGNORE_EXACT_PAGES:
+        return True
+    if filename.startswith(IGNORE_PREFIX_PAGES):
+        return True
+    return False
+
+
+def transform_tasks_and_schedules(content: str) -> str:
+    """
+    Transforms Logseq task keywords (TODO, DOING, LATER, NOW, DONE, CANCELLED, WAITING)
+    into standard Markdown checkboxes and converts SCHEDULED/DEADLINE metadata into
+    standard task emoji format (⏳ for scheduled, 📅 for due/deadline).
+    """
+    if not content:
+        return content
+
+    task_map = {
+        "TODO": "[ ]",
+        "LATER": "[ ]",
+        "DOING": "[/]",
+        "NOW": "[/]",
+        "DONE": "[x]",
+        "CANCELLED": "[-]",
+        "CANCELED": "[-]",
+        "WAITING": "[?]",
+    }
+
+    lines = content.split("\n")
+    processed_lines = []
+
+    # 1. Convert task state keywords on list items
+    for line in lines:
+        match = re.match(
+            r"^(\s*[-*]\s+)(TODO|DOING|LATER|NOW|DONE|CANCELLED|CANCELED|WAITING)\b\s*",
+            line,
+        )
+        if match:
+            prefix = match.group(1)
+            state = match.group(2)
+            rest = line[match.end() :]
+            checkbox = task_map.get(state, "[ ]")
+            line = f"{prefix}{checkbox} {rest}"
+        processed_lines.append(line)
+
+    # 2. Process SCHEDULED and DEADLINE
+    final_lines: list[str] = []
+    for line in processed_lines:
+        sched_match = re.search(r"SCHEDULED:\s*<(\d{4}-\d{2}-\d{2})[^>]*>", line)
+        dead_match = re.search(r"DEADLINE:\s*<(\d{4}-\d{2}-\d{2})[^>]*>", line)
+
+        if sched_match or dead_match:
+            sched_tag = f"⏳ {sched_match.group(1)}" if sched_match else ""
+            dead_tag = f"📅 {dead_match.group(1)}" if dead_match else ""
+            tags = " ".join(t for t in [dead_tag, sched_tag] if t)
+
+            # Strip SCHEDULED and DEADLINE from the line
+            cleaned_line = re.sub(r"SCHEDULED:\s*<[^>]+>\s*", "", line)
+            cleaned_line = re.sub(r"DEADLINE:\s*<[^>]+>\s*", "", cleaned_line)
+
+            # If current line is already a list item or task:
+            if re.match(r"^\s*[-*]\s+", line):
+                base = re.sub(r"SCHEDULED:\s*<[^>]+>\s*", "", line)
+                base = re.sub(r"DEADLINE:\s*<[^>]+>\s*", "", base).rstrip()
+                final_lines.append(f"{base} {tags}".rstrip())
+            elif (
+                final_lines
+                and re.match(r"^\s*[-*]\s+", final_lines[-1])
+                and (not cleaned_line.strip() or cleaned_line.strip() in {"-", "*"})
+            ):
+                # Indented line with ONLY dates -> attach to previous item
+                final_lines[-1] = f"{final_lines[-1]} {tags}".rstrip()
+            else:
+                if cleaned_line.strip():
+                    final_lines.append(f"{cleaned_line.rstrip()} {tags}".rstrip())
+                else:
+                    final_lines.append(tags)
+        else:
+            final_lines.append(line)
+
+    return "\n".join(final_lines)

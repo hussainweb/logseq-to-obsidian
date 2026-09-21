@@ -23,6 +23,12 @@ def source_vault(tmp_path):
     with open(vault / "pages" / "Category___Topic.md", "w") as f:
         f.write("- Page content")
 
+    # Create ignored Readwise pages
+    with open(vault / "pages" / "Readwise.md", "w") as f:
+        f.write("- Readwise metadata")
+    with open(vault / "pages" / "articles___Highlights___Sample.md", "w") as f:
+        f.write("- Highlight content")
+
     # Create an asset
     with open(vault / "assets" / "image.png", "w") as f:
         f.write("fake image content")
@@ -46,6 +52,10 @@ def test_full_vault_conversion(source_vault, dest_vault):
     assert (dest_vault / "Daily" / "2025-11-27.md").exists()
     assert (dest_vault / "Category" / "Topic.md").exists()
     assert (dest_vault / "assets" / "image.png").exists()
+
+    # Verify ignored pages are NOT in dest_vault
+    assert not (dest_vault / "Readwise.md").exists()
+    assert not (dest_vault / "articles" / "Highlights" / "Sample.md").exists()
 
     # Verify content
     with open(dest_vault / "Daily" / "2025-11-27.md", "r") as f:

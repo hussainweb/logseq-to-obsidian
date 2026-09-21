@@ -94,6 +94,7 @@ def convert_vault(
     # Configure vault core settings and plugins
     if not dry_run:
         from logseq_converter.obsidian.configurator import configure_community_plugins, configure_core_vault
+
         configure_core_vault(destination)
         configure_community_plugins(destination)
 
@@ -177,7 +178,6 @@ def _process_journals(
                 f.write(file_content)
 
 
-
 def _process_pages(
     pages_dir: Path,
     destination: Path,
@@ -189,6 +189,11 @@ def _process_pages(
         return
 
     for file_path in pages_dir.glob("*.md"):
+        if converter.should_ignore(file_path.name):
+            if verbose:
+                log_progress(f"Ignoring page: {file_path.name}")
+            continue
+
         try:
             if verbose:
                 log_progress(f"Processing page: {file_path.name}")
@@ -403,6 +408,7 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
     legacy_type_dir = destination / "type"
     if legacy_type_dir.exists():
         import shutil
+
         try:
             shutil.rmtree(legacy_type_dir)
         except Exception as e:
@@ -414,100 +420,38 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
             "icon": "📓",
             "_color": "#4f46e5",
             "sort": "title:desc",
-            "content": "# \n\n## Plan for the day\n\n- \n\n## Log\n\n- \n"
+            "content": "# \n\n## Plan for the day\n\n- \n\n## Log\n\n- \n",
         },
         "learning": {
             "label": "Learning",
             "icon": "💡",
             "_color": "#eab308",
-            "content": "## Summary\n\n- \n\n## Details\n\n- \n"
+            "content": "## Summary\n\n- \n\n## Details\n\n- \n",
         },
-        "link": {
-            "label": "Link",
-            "icon": "🔗",
-            "_color": "#3b82f6",
-            "content": ""
-        },
-        "achievement": {
-            "label": "Achievement",
-            "icon": "🏆",
-            "_color": "#10b981",
-            "content": "- \n"
-        },
-        "highlight": {
-            "label": "Highlight",
-            "icon": "✨",
-            "_color": "#f43f5e",
-            "content": "- \n"
-        },
+        "link": {"label": "Link", "icon": "🔗", "_color": "#3b82f6", "content": ""},
+        "achievement": {"label": "Achievement", "icon": "🏆", "_color": "#10b981", "content": "- \n"},
+        "highlight": {"label": "Highlight", "icon": "✨", "_color": "#f43f5e", "content": "- \n"},
         "project": {
             "label": "Project",
             "icon": "📁",
             "_color": "#ec4899",
-            "content": "## Overview\n\n- \n\n## Tasks\n\n- [ ] \n"
+            "content": "## Overview\n\n- \n\n## Tasks\n\n- [ ] \n",
         },
-        "work": {
-            "label": "Work",
-            "sidebar_label": "Work",
-            "icon": "💼",
-            "_color": "#f97316",
-            "content": ""
-        },
+        "work": {"label": "Work", "sidebar_label": "Work", "icon": "💼", "_color": "#f97316", "content": ""},
         "meeting": {
             "label": "Meeting",
             "icon": "👥",
             "_color": "#8b5cf6",
-            "content": "## Agenda\n\n- \n\n## Notes\n\n- \n\n## Action Items\n\n- [ ] \n"
+            "content": "## Agenda\n\n- \n\n## Notes\n\n- \n\n## Action Items\n\n- [ ] \n",
         },
-        "device": {
-            "label": "Device",
-            "icon": "💻",
-            "_color": "#64748b",
-            "content": ""
-        },
-        "server": {
-            "label": "Server",
-            "icon": "🖥️",
-            "_color": "#475569",
-            "content": ""
-        },
-        "upkeep": {
-            "label": "Upkeep",
-            "sidebar_label": "Upkeep",
-            "icon": "🛠️",
-            "_color": "#06b6d4",
-            "content": ""
-        },
-        "content-creation": {
-            "label": "Content Creation",
-            "icon": "🎥",
-            "_color": "#d946ef",
-            "content": ""
-        },
-        "restaurant": {
-            "label": "Restaurant",
-            "icon": "🍴",
-            "_color": "#14b8a6",
-            "content": ""
-        },
-        "prompt-template": {
-            "label": "Prompt Template",
-            "icon": "📝",
-            "_color": "#a855f7",
-            "content": ""
-        },
-        "book": {
-            "label": "Book",
-            "icon": "📖",
-            "_color": "#84cc16",
-            "content": ""
-        },
-        "list": {
-            "label": "List",
-            "icon": "📋",
-            "_color": "#06b6d4",
-            "content": ""
-        }
+        "device": {"label": "Device", "icon": "💻", "_color": "#64748b", "content": ""},
+        "server": {"label": "Server", "icon": "🖥️", "_color": "#475569", "content": ""},
+        "upkeep": {"label": "Upkeep", "sidebar_label": "Upkeep", "icon": "🛠️", "_color": "#06b6d4", "content": ""},
+        "content-creation": {"label": "Content Creation", "icon": "🎥", "_color": "#d946ef", "content": ""},
+        "restaurant": {"label": "Restaurant", "icon": "🍴", "_color": "#14b8a6", "content": ""},
+        "prompt-template": {"label": "Prompt Template", "icon": "📝", "_color": "#a855f7", "content": ""},
+        "book": {"label": "Book", "icon": "📖", "_color": "#84cc16", "content": ""},
+        "list": {"label": "List", "icon": "📋", "_color": "#06b6d4", "content": ""},
     }
 
     for type_name, config in types_config.items():
@@ -518,14 +462,14 @@ def create_tolaria_types(destination: Path, dry_run: bool = False) -> None:
                 "---",
                 "type: Type",
                 f"icon: {config['icon']}",
-                f"_color: \"{config['_color']}\"",
+                f'_color: "{config["_color"]}"',
             ]
             if "sidebar_label" in config:
                 frontmatter.append(f"sidebar_label: {config['sidebar_label']}")
             if "sort" in config:
                 frontmatter.append(f"sort: {config['sort']}")
             frontmatter.append("---")
-            
+
             first_header = f"# {config['label']}"
             file_content = "\n".join(frontmatter) + "\n\n" + first_header + "\n\n" + config["content"]
             try:
@@ -573,13 +517,12 @@ def convert_to_tolaria(
     if not destination.exists() and not dry_run:
         destination.mkdir(parents=True)
 
-
     from logseq_converter.tolaria.converter import TolariaConverter
-    
+
     converter = TolariaConverter(scanner=scanner, env=os.environ)
     if clear_llm_cache:
         converter.llm_generator.clear_cache()
-    
+
     stats_pages = 0
     stats_journals = 0
 
@@ -591,11 +534,11 @@ def convert_to_tolaria(
                 if verbose:
                     log_progress(f"Ignoring page: {file_path.name}")
                 continue
-                
+
             try:
                 if verbose:
                     log_progress(f"Processing page: {file_path.name}")
-                
+
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
@@ -603,7 +546,7 @@ def convert_to_tolaria(
 
                 final_name, final_content = converter.process_metadata(file_path.name, content)
                 dest_path = destination / final_name
-                
+
                 if not dry_run:
                     with open(dest_path, "w", encoding="utf-8") as f:
                         f.write(final_content)
@@ -692,7 +635,7 @@ def convert_to_tolaria(
     print(f"  Learnings: {converter.stats_learnings}")
     print(f"  Achievements: {converter.stats_achievements}")
     print(f"  Highlights: {converter.stats_highlights}")
-    
+
     return 0
 
 

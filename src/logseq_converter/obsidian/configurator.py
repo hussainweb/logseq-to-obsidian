@@ -31,7 +31,7 @@ def configure_core_vault(destination: Path) -> None:
         "bookmarks": True,
         "outline": True,
         "word-count": True,
-        "file-recovery": True
+        "file-recovery": True,
     }
 
     # If it exists, merge to preserve any user settings while ensuring daily-notes is True
@@ -56,11 +56,7 @@ def configure_core_vault(destination: Path) -> None:
 
     # 2. Setup daily-notes.json (core plugin config)
     daily_notes_config_path = obsidian_dir / "daily-notes.json"
-    default_daily_notes_config = {
-        "format": "YYYY-MM-DD",
-        "folder": "Daily",
-        "autorun": False
-    }
+    default_daily_notes_config = {"format": "YYYY-MM-DD", "folder": "Daily", "autorun": False}
 
     current_daily_notes_config = {}
     if daily_notes_config_path.exists():
@@ -126,8 +122,7 @@ def install_community_plugin(destination: Path, plugin_id: str, repo: str) -> No
 
     api_url = f"https://api.github.com/repos/{repo}/releases/latest"
     req = urllib.request.Request(
-        api_url,
-        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+        api_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
     )
 
     ctx = ssl.create_default_context()
@@ -151,7 +146,7 @@ def install_community_plugin(destination: Path, plugin_id: str, repo: str) -> No
             if name in {"main.js", "manifest.json", "styles.css"}:
                 asset_req = urllib.request.Request(
                     download_url,
-                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
                 )
                 log_progress(f"Downloading {name} for {plugin_id}...")
                 with urllib.request.urlopen(asset_req, context=ctx) as asset_response:
@@ -187,4 +182,3 @@ def configure_community_plugins(destination: Path) -> None:
     """
     # Install notebook-navigator
     install_community_plugin(destination, "notebook-navigator", "johansan/notebook-navigator")
-

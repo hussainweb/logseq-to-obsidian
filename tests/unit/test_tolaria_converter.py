@@ -58,6 +58,7 @@ def test_tolaria_convert_content_block_refs_and_date_links():
     scanner = BlockReferenceScanner()
     # Add a block definition to block map manually
     from pathlib import Path
+
     scanner.block_map["11111111-1111-1111-1111-111111111111"] = Path("pages/learnings___Networking___VLAN.md")
     scanner.block_map["22222222-2222-2222-2222-222222222222"] = Path("journals/2025_11_27.md")
 
@@ -105,9 +106,55 @@ learnings-prop:: test
 
     assert final_name == "My Test Learning.md"
     assert "type: Learning" in final_content
+    assert 'belongs_to: "[[Subcategory]]"' in final_content
+    assert "# My Test Learning" in final_content
     # Frontmatter is preserved and merged
     assert "title: My Test Learning" in final_content
     assert "learnings-prop: test" in final_content
     # Content is transformed
     assert "^11111111-1111-1111-1111-111111111111" in final_content
     assert "[[journal/2025-11-15]]" in final_content
+
+
+def test_tolaria_relationships_for_projects_work_and_meetings():
+    converter = TolariaConverter()
+
+    # Project with area
+    name, content = converter.process_metadata("projects___Infrastructure___Kubernetes.md", "- Cluster setup")
+    assert name == "Kubernetes.md"
+    assert "type: Project" in content
+    assert 'belongs_to: "[[Infrastructure]]"' in content
+    assert "# Kubernetes" in content
+
+    # Work under Axelerant with project
+    name, content = converter.process_metadata("Axelerant___ClientX___Migration.md", "- Doing migration")
+    assert name == "Migration.md"
+    assert "type: Work" in content
+    assert 'belongs_to: "[[ClientX]]"' in content
+    assert 'related_to: "[[Axelerant]]"' in content
+    assert "# Migration" in content
+
+    # Direct Axelerant task
+    name, content = converter.process_metadata("Axelerant___Onboarding.md", "- Onboarding steps")
+    assert name == "Onboarding.md"
+    assert "type: Work" in content
+    assert 'belongs_to: "[[Axelerant]]"' in content
+
+    # Meeting with type
+    name, content = converter.process_metadata("Meetings___1on1___Bob.md", "- Notes")
+    assert name == "Bob.md"
+    assert "type: Meeting" in content
+    assert 'belongs_to: "[[1on1]]"' in content
+
+
+def test_tolaria_tasks_conversion():
+    converter = TolariaConverter()
+    content = """- TODO Task 1
+  SCHEDULED: <2025-11-28 Fri>
+- DOING Task 2
+- DONE Task 3
+"""
+    result = converter.convert_content(content)
+    assert "- [ ] Task 1 ⏳ 2025-11-28" in result
+    assert "- [/] Task 2" in result
+    assert "- [x] Task 3" in result

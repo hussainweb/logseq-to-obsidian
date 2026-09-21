@@ -34,11 +34,9 @@ def test_provider_resolution():
 
 def test_hashing_and_caching(tmp_path):
     # Inject XDG_CACHE_HOME in env to isolate cache path in tmp folder
-    generator = LLMFilenameGenerator(env={
-        "LSC_LLM": "none",
-        "XDG_CACHE_HOME": str(tmp_path),
-        "LOCALAPPDATA": str(tmp_path)
-    })
+    generator = LLMFilenameGenerator(
+        env={"LSC_LLM": "none", "XDG_CACHE_HOME": str(tmp_path), "LOCALAPPDATA": str(tmp_path)}
+    )
     assert generator.cache_path.name == "filename_cache.json"
 
     description = "Learned how to test LLM code"
@@ -54,11 +52,9 @@ def test_hashing_and_caching(tmp_path):
     generator._save_cache()
 
     # Create new generator instance to test loading from cache
-    generator2 = LLMFilenameGenerator(env={
-        "LSC_LLM": "none",
-        "XDG_CACHE_HOME": str(tmp_path),
-        "LOCALAPPDATA": str(tmp_path)
-    })
+    generator2 = LLMFilenameGenerator(
+        env={"LSC_LLM": "none", "XDG_CACHE_HOME": str(tmp_path), "LOCALAPPDATA": str(tmp_path)}
+    )
     assert generator2.cache.get(hash_val) == "Testing LLM Code"
 
     # Clear cache
@@ -87,11 +83,9 @@ def test_post_process_filename():
 
 def test_resolve_placeholders(tmp_path):
     # Inject XDG_CACHE_HOME in env to isolate cache path in tmp folder
-    generator = LLMFilenameGenerator(env={
-        "LSC_LLM": "none",
-        "XDG_CACHE_HOME": str(tmp_path),
-        "LOCALAPPDATA": str(tmp_path)
-    })
+    generator = LLMFilenameGenerator(
+        env={"LSC_LLM": "none", "XDG_CACHE_HOME": str(tmp_path), "LOCALAPPDATA": str(tmp_path)}
+    )
 
     description = "Setting up FastAPI project"
     sub_items = ["- Add uvicorn", "- Write main.py"]

@@ -17,7 +17,7 @@ class TolariaConverter:
         "full-title.md",
         "contents.md",
     }
-    
+
     IGNORE_PREFIXES = (
         "articles___Highlights___",
         "books___Highlights___",
@@ -38,26 +38,25 @@ class TolariaConverter:
         self.stats_achievements = 0
         self.stats_highlights = 0
         from logseq_converter.llm import LLMFilenameGenerator
+
         self.llm_generator = LLMFilenameGenerator(env=env or {})
 
     def should_ignore(self, filename: str) -> bool:
-        if filename in self.IGNORE_EXACT:
-            return True
-        if filename.startswith(self.IGNORE_PREFIXES):
-            return True
-        return False
+        from logseq_converter.utils import should_ignore_page
+
+        return should_ignore_page(filename)
 
     def decode_filename(self, filename: str) -> str:
         return urllib.parse.unquote(filename)
 
     def extract_and_remove_frontmatter(self, content: str) -> Tuple[str, Dict[str, str]]:
         """
-        Extracts existing YAML frontmatter and key:: value LogSeq properties 
+        Extracts existing YAML frontmatter and key:: value LogSeq properties
         from the content, returning the remaining content and a dict of properties.
         """
         lines = content.split("\n")
         properties = {}
-        
+
         idx = 0
         # Parse YAML Frontmatter
         if lines and lines[0].strip() == "---":
@@ -67,7 +66,7 @@ class TolariaConverter:
                 if line.strip() == "---":
                     idx += 1
                     break
-                
+
                 # Match yaml key: value
                 yaml_match = re.match(r"^\s*([a-zA-Z0-9_-]+):\s*(.*)$", line)
                 if yaml_match:
@@ -90,10 +89,10 @@ class TolariaConverter:
                 idx += 1
             else:
                 break
-                
+
         # The rest is content
         content_lines = lines[idx:]
-        
+
         return "\n".join(content_lines), properties
 
     def transform_page_filename(self, filename: str) -> str:
@@ -103,7 +102,7 @@ class TolariaConverter:
         base_name = filename
         if base_name.endswith(".md"):
             base_name = base_name[:-3]
-            
+
         if base_name.startswith("projects___"):
             parts = base_name.split("___")
             if len(parts) >= 3:
@@ -200,9 +199,15 @@ class TolariaConverter:
             content = self._transform_block_ids(content)
             content = self._transform_block_refs(content)
             content = self._transform_date_links(content)
+
+            from logseq_converter.utils import transform_tasks_and_schedules
+
+            content = transform_tasks_and_schedules(content)
+
             return content
         except Exception as e:
             from logseq_converter.utils import log_warning
+
             log_warning(f"Error converting content: {e}. Returning original content.")
             return content
 
@@ -214,79 +219,120 @@ class TolariaConverter:
         base_name = filename
         if base_name.endswith(".md"):
             base_name = base_name[:-3]
-            
+
         remaining_content, properties = self.extract_and_remove_frontmatter(content)
-        
+
         # Mappings based on Logseq conventions
         if base_name.startswith("projects___"):
             parts = base_name.split("___")
             properties["type"] = "Project"
             if len(parts) >= 3:
-                properties["area"] = parts[1]
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
                 base_name = parts[-1]
             elif len(parts) == 2:
                 base_name = parts[1]
-        
+
         elif base_name.startswith("learnings___"):
             parts = base_name.split("___")
             properties["type"] = "Learning"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Lists___"):
             parts = base_name.split("___")
             properties["type"] = "List"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Axelerant___"):
             parts = base_name.split("___")
             properties["type"] = "Work"
-            properties["client"] = "Axelerant"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                properties["related_to"] = '"[[Axelerant]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                properties["belongs_to"] = '"[[Axelerant]]"'
+                base_name = parts[1]
+
         elif base_name.startswith("Meetings___"):
             parts = base_name.split("___")
             properties["type"] = "Meeting"
             if len(parts) >= 3:
-                properties["meeting-type"] = parts[1]
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
                 base_name = parts[-1]
             elif len(parts) == 2:
                 base_name = parts[1]
-                
+
         elif base_name.startswith("Devices___"):
             parts = base_name.split("___")
             properties["type"] = "Device"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Servers___"):
             parts = base_name.split("___")
             properties["type"] = "Server"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Upkeep___"):
             parts = base_name.split("___")
             properties["type"] = "Upkeep"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("content-creation___"):
             parts = base_name.split("___")
             properties["type"] = "Content Creation"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Restaurants___"):
             parts = base_name.split("___")
             properties["type"] = "Restaurant"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("prompt-templates___"):
             parts = base_name.split("___")
             properties["type"] = "Prompt Template"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         elif base_name.startswith("Books___"):
             parts = base_name.split("___")
             properties["type"] = "Book"
-            base_name = parts[-1]
-            
+            if len(parts) >= 3:
+                properties["belongs_to"] = f'"[[{self.decode_filename(parts[1])}]]"'
+                base_name = parts[-1]
+            elif len(parts) == 2:
+                base_name = parts[1]
+
         else:
             # Handle remaining hierarchies gracefully, convert to hyphen
             base_name = base_name.replace("___", " - ")
@@ -299,6 +345,15 @@ class TolariaConverter:
         # Convert remaining_content body
         transformed_body = self.convert_content(remaining_content)
 
+        # Ensure first H1 title is present if missing
+        has_h1 = bool(re.search(r"^\s*#\s+.*$", transformed_body, re.MULTILINE))
+        final_title = self.decode_filename(base_name).replace("/", " - ")
+        if not has_h1 and final_title:
+            if transformed_body.strip():
+                transformed_body = f"# {final_title}\n\n{transformed_body}"
+            else:
+                transformed_body = f"# {final_title}\n"
+
         # Build YAML Frontmatter
         frontmatter = []
         if properties:
@@ -306,9 +361,9 @@ class TolariaConverter:
             for k, v in properties.items():
                 frontmatter.append(f"{k}: {v}")
             frontmatter.append("---")
-            
+
         final_content = "\n".join(frontmatter) + "\n\n" + transformed_body.strip()
-        
+
         return final_filename, final_content
 
     def extract_sections(self, content: str, original_filename: str) -> tuple[str, list[tuple[str, str]]]:
@@ -322,6 +377,7 @@ class TolariaConverter:
 
         parser = LogSeqParser()
         from logseq_converter.utils import parse_journal_date
+
         journal_date = parse_journal_date(original_filename)
 
         i = 0
@@ -538,7 +594,10 @@ class TolariaConverter:
 
         content_lines = frontmatter
         transformed_desc = self.convert_content(item.description)
-        content_lines.append(f"\n{transformed_desc}\n")
+        if not transformed_desc.strip().startswith("#"):
+            content_lines.append(f"\n# {transformed_desc.strip()}\n")
+        else:
+            content_lines.append(f"\n{transformed_desc}\n")
 
         for sub in item.sub_items:
             transformed_sub = self.convert_content(sub)

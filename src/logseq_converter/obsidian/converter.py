@@ -27,7 +27,13 @@ class ObsidianConverter:
         self.scanner = scanner
         self.stats = stats or ConversionStats()
         from logseq_converter.llm import LLMFilenameGenerator
+
         self.llm_generator = LLMFilenameGenerator(env=env or {})
+
+    def should_ignore(self, filename: str) -> bool:
+        from logseq_converter.utils import should_ignore_page
+
+        return should_ignore_page(filename)
 
     def transform_journal_filename(self, filename: str) -> Optional[str]:
         """
@@ -74,6 +80,11 @@ class ObsidianConverter:
 
             # 6. Date Links
             content = self._transform_date_links(content)
+
+            # 7. Tasks and Schedules
+            from logseq_converter.utils import transform_tasks_and_schedules
+
+            content = transform_tasks_and_schedules(content)
 
             return content
         except Exception as e:
@@ -428,11 +439,13 @@ class ObsidianConverter:
         content_lines.append(f"# {item.caption}\n")
 
         # Add the top-level bullet with original content
-        content_lines.append(f"- {item.original_content}")
+        transformed_original = self.convert_content(item.original_content)
+        content_lines.append(f"- {transformed_original}")
 
         for sub in item.sub_items:
             # sub already contains indentation and bullet marker
-            content_lines.append(f"  {sub}")
+            transformed_sub = self.convert_content(sub)
+            content_lines.append(f"  {transformed_sub}")
 
         return filename, "\n".join(content_lines)
 
@@ -459,10 +472,12 @@ class ObsidianConverter:
         ]
 
         content_lines = frontmatter
-        content_lines.append(f"{item.description}\n")
+        transformed_desc = self.convert_content(item.description)
+        content_lines.append(f"{transformed_desc}\n")
 
         for sub in item.sub_items:
             # sub already contains indentation, just prepend '- '
-            content_lines.append(f"{sub}")
+            transformed_sub = self.convert_content(sub)
+            content_lines.append(f"{transformed_sub}")
 
         return filename, "\n".join(content_lines)
